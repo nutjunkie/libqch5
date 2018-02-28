@@ -7,17 +7,19 @@
 
 ********************************************************************************/
 
-#include "H5Cpp.h"
+#include "hdf5.h"
 #include "Types.h"
 
 namespace libqch5 {
 
+class Data;
+
 class ProjectFile {
 
    public:
-      enum Status { Closed, Open };
+      enum Status { Closed, Open, Error };
       
-      ProjectFile(String const& filePath);
+      ProjectFile(char const* filePath);
 
       ~ProjectFile();
 
@@ -25,24 +27,24 @@ class ProjectFile {
 
       String const& error() const { return m_error; }
 
-      void put(String const& path, Data const&);
+      void put(char const* path, Data const& data);
 
    private:
       /// Sets-up the appropriate hierarchy for a new project file
-      bool initGroupHierarchy();
+      void initGroupHierarchy();
 
 	  /// Initializes a new project file.
-      void init(String const& filePath);
+      void init(char const* filePath);
 
 	  /// Attempts to connect to an existing Project file, updating m_status on
 	  /// success.
-      void open(String const& filePath);
+      void open(char const* filePath);
 
       /// Closes the attached file, updating m_status.
       void close();
 
       String  m_error;
-      H5File* m_file;
+      hid_t   m_fileId;
       Status  m_status;
 };
 

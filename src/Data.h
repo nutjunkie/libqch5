@@ -1,6 +1,5 @@
 #ifndef LIBQCH5_DATA_H
 #define LIBQCH5_DATA_H
-
 /*******************************************************************************
 
   This file is part of libqc-hdf a data file format for managing quantum 
@@ -38,13 +37,12 @@ class Data {
 
       bool append(String const& path, Data const&);
 
-      template <class T>
-      bool put(String const& path, T const&);
+      bool put(Data const&);
 
       bool get(String const& path, Data &);
 
    private:
-      ProjectFile* m_projectFile;
+      //ProjectFile* m_projectFile;
       String       m_ownPath;
       Level        m_level;
 

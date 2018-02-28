@@ -6,20 +6,21 @@
 ********************************************************************************/
 
 #include "ProjectFile.h"
+#include "Data.h"
 #include "Debug.h"
 
 namespace libqch5 {
 
 
-ProjectFile::ProjectFile(String const& path)
+ProjectFile::ProjectFile(char const* path) : m_fileId(0), m_status(Closed)
 {
    open(path);
-   if (m_status != Open) {
-      init(path);
-   }
+   if (m_status != Open)  init(path);
 
    if (m_status != Open) {
-      DEBUG("Failed to open file " << path);
+      DEBUG("Failed to open project archive " << path);
+   }else {
+      DEBUG("Opened " << path);
    }
 }
 
@@ -29,26 +30,85 @@ ProjectFile::~ProjectFile()
    close();
 }
 
-ProjectFile::close()
+
+void ProjectFile::open(char const* path)
 {
+   // Turn off automatic printing of error messages
+   H5Eset_auto(0,0,0);
+
+   m_fileId = H5Fopen(path, H5F_ACC_RDWR, H5P_DEFAULT);
+
    if (m_fileId > 0) {
-      H
+      DEBUG("Opening exisiting file " << path);
+      m_status = Open;
    }
+}
+
+
+void ProjectFile::init(char const* path)
+{
+   m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+   
+   if (m_fileId > 0) {
+      DEBUG("Initializing new file " << path);
+      initGroupHierarchy();
+      m_status = Open;
+   }
+}
+
+
+void ProjectFile::close()
+{
+   if (m_fileId > 0) H5Fclose(m_fileId);
+
    m_fileId = 0;
-   m_status = Closed
+   m_status = Closed;
 }
 
 
-bool Data::append(String const& path, Data const& data)
+void ProjectFile::initGroupHierarchy()
 {
+   hid_t  group;
+   herr_t status;
 
+   group = H5Gcreate(m_fileId, "/Projects", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+   if (group < 0) {
+      m_error  = "Failed to create Projects group";
+      m_status = Error;
+   }
+
+   group = H5Gcreate(m_fileId, "/External", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+   if (group < 0) {
+      m_error  = "Failed to create Exterals group";
+      m_status = Error;
+   }
+
+   group = H5Gcreate(m_fileId, "/Consolidated", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+   if (group < 0) {
+      m_error  = "Failed to create Consolidated Data group";
+      m_status = Error;
+   }
+
+   group = H5Gcreate(m_fileId, "/Schema", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+   if (group < 0) {
+      m_error  = "Failed to create Consolidated Data group";
+      m_status = Error;
+   }
 }
 
-template <class T>
-bool Data::put(String const& path, T const& data)
+
+void ProjectFile::put(char const* path, Data const& data)
 {
-   if (data )
-   // split path
+   String p;
+   if (path) p = String(path);
+      
+   unsigned level(data.level());
+   for (unsigned i = 0; i < level; ++i) {
+       p += "/default";
+   }
+
+   DEBUG("Adding data to path: " << p);
 }
+
 
 } // end namespace

@@ -9,7 +9,6 @@
 
 #include <vector>
 #include <string>
-//#include "quaternion.h"
 
 namespace libqch5 {
 
@@ -17,6 +16,8 @@ template<typename T>
 struct List : public std::vector<T>  { };
 
 typedef std::string                  String;
+
+//#include "quaternion.h"
 //typedef boost::qvm::quatc<double>  Quaternion;
 
 

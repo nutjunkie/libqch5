@@ -5,14 +5,14 @@
 
 ********************************************************************************/
 
-#include "Node.h"
+#include "DataSpace.h"
 
 namespace libqch5 {
 
-class Molecule : public Node {
+class Molecule : public DataSpace {
 
    public:
-      Molecule() : Node(Node::Molecule) { }
+      Molecule() : Data(Data::Molecule) { }
 
    private:
       unsigned m_nAtoms;

@@ -15,11 +15,11 @@ bool Data::append(String const& path, Data const& data)
 
 }
 
-template <class T>
-bool Data::put(String const& path, T const& data)
+bool Data::put(Data const& data)
 {
-   if (data )
+   DEBUG("Putting Data into Data");
    // split path
+   return true;
 }
 
 } // end namespace
