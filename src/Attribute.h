@@ -29,8 +29,6 @@ class Attribute {
 
 class AttributeList : public List<Attribute> {
 
-   public:
-
 };
 
 } // end namespace
