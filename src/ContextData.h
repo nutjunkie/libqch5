@@ -1,3 +1,5 @@
+#ifndef LIBQCH5_CONTEXTDATA_H
+#define LIBQCH5_CONTEXTDATA_H
 /*******************************************************************************
 
   This file is part of libqch5 a data file format for managing quantum 
@@ -5,21 +7,24 @@
 
 ********************************************************************************/
 
-#include "Data.h"
-#include "Debug.h"
+#include "RawData.h"
+#include "DataType.h"
+
 
 namespace libqch5 {
 
-bool Data::append(String const& path, Data const& data)
-{
+class ContextData {
 
-}
+   public:
+      ContextData(DataType dataType) : m_dataType(dataType) { }
 
-bool Data::put(Data const& data)
-{
-   DEBUG("Putting Data into Data");
-   // split path
-   return true;
-}
+
+   private:
+      DataType m_dataType;
+      RawData  m_data;
+      // Attributes
+};
 
 } // end namespace
+
+#endif

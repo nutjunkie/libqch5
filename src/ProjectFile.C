@@ -1,12 +1,12 @@
 /*******************************************************************************
 
-  This file is part of libqc-hdf a data file format for managing quantum 
+  This file is part of libqchd5 a data file format for managing quantum 
   chemistry projects.
 
 ********************************************************************************/
 
 #include "ProjectFile.h"
-#include "Data.h"
+#include "RawData.h"
 #include "Debug.h"
 
 namespace libqch5 {
@@ -97,18 +97,10 @@ void ProjectFile::initGroupHierarchy()
 }
 
 
-void ProjectFile::put(char const* path, Data const& data)
+void ProjectFile::put(char const* path, RawData const& data)
 {
-   String p;
-   if (path) p = String(path);
-      
-   unsigned level(data.level());
-   for (unsigned i = 0; i < level; ++i) {
-       p += "/default";
-   }
-
-   DEBUG("Adding data to path: " << p);
+   // need to open group here
+   data.writeToFile(m_fileId, path);
 }
-
 
 } // end namespace

@@ -1,18 +1,21 @@
 /*******************************************************************************
 
-  This file is part of libqc-hdf a data file format for managing quantum 
+  This file is part of libqch5 a data file format for managing quantum 
   chemistry projects.
 
 ********************************************************************************/
 
-#include "DataSpace.h"
+#include "ContextData.h"
+
 
 namespace libqch5 {
 
-class Molecule : public DataSpace {
+class Molecule : public ContextData {
 
    public:
-      Molecule() : Data(Data::Molecule) { }
+      Molecule(char const* name);
+
+      void setAtoms(List<unsigned> atoms);
 
    private:
       unsigned m_nAtoms;

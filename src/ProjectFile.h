@@ -2,7 +2,7 @@
 #define LIBQCH5_PROJECTFILE_H
 /*******************************************************************************
 
-  This file is part of libqc-hdf a data file format for managing quantum 
+  This file is part of libqch5 a data file format for managing quantum 
   chemistry projects.
 
 ********************************************************************************/
@@ -10,9 +10,10 @@
 #include "hdf5.h"
 #include "Types.h"
 
+
 namespace libqch5 {
 
-class Data;
+class RawData;
 
 class ProjectFile {
 
@@ -27,7 +28,7 @@ class ProjectFile {
 
       String const& error() const { return m_error; }
 
-      void put(char const* path, Data const& data);
+      void put(char const* path, RawData const& data);
 
    private:
       /// Sets-up the appropriate hierarchy for a new project file

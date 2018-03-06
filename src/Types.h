@@ -20,7 +20,6 @@ typedef std::string                  String;
 //#include "quaternion.h"
 //typedef boost::qvm::quatc<double>  Quaternion;
 
-
 } // end namespace
 
 #endif
