@@ -1,11 +1,10 @@
 #include "ProjectFile.h"
 #include "Molecule.h"
-#include "Geometry.h"
-#include "DataSpace.h"
 
 
 #include "Array.h"
 #include "RawData.h"
+#include "Schema.h"
 
 #include <iostream>
 
@@ -136,6 +135,28 @@ int main()
 
    libqch5::ProjectFile project("myproject.h5");
 
+   Schema schema("Georges Marvelous Medicine");
+
+   Schema::Node& root(schema.root());
+
+   Schema::Node& joke(root.appendChild("this is a joke"));
+
+   Schema::Node& punchline(joke.appendChild("with a punchline"));
+   joke.appendChild("which makes people laugh");
+
+   punchline.appendChild("Ha Ha");
+
+   schema.appendChild("sdfad");
+   std::cout << "Schema passed 1" << std::endl;;
+
+   std::cout << "Schema passed 2" << std::endl;;
+
+   root.insert("this is another joke")[0].insert("with a punchline");
+   std::cout << "Schema passed 3" << std::endl;;
+
+   schema.print();
+   
+   std::cout << "Schema passed" << std::endl;;
    project.put("/data", data);
 
    

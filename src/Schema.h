@@ -8,52 +8,40 @@
 ********************************************************************************/
 
 #include "Types.h"
-#include "Attribute.h"
+#include "st_tree.h"
+
+#include "x_common.h"
 
 namespace libqch5 {
 
-/// Schemas determine the heirarchy of the data storage
+
+/// Schemas determine the heirarchy of the data storage for a given ProjctFile.
+/// We allow strings on the assumption that any unrecognised ContextData type can
+/// be handled generically.
 class Schema {
 
    public:
-      enum Level { ProjectGroup = 0, 
-                   Project, 
-                   MoleculeGroup,
-                   Molecule,
-                   GeometryGroup,
-                   Geometry,
-                   StateGroup,
-                   State,
-                   CalculationGroup,
-                   Calculation,
-                   PropertyGroup,
-                   Property 
-                 };
+      typedef st_tree::tree<String> Tree;
+      typedef st_tree::tree<String>::node_type Node;
 
+   public:
+      Schema(String const& root = "Root");
 
-      Data(Level const level) : m_level(level) { }
+      Node& root() { return m_tree.root(); };
+      Node& appendChild(String const& data);
+      
+      bool contains(String const&);
+      unsigned depth(String const&);
 
-      Level level() const { return m_level; }
-
-      bool append(String const& path, Data const&);
-
-      bool put(Data const&);
-
-      bool get(String const& path, Data &);
+      void print() { serialize_indented(m_tree, std::cout, 4); }
 
    private:
-      //ProjectFile* m_projectFile;
-      String       m_ownPath;
-      Level        m_level;
+      Tree m_tree;
+      Node m_node;
 
-      //List<Attribute> m_attributes;
 };
 
 } // end namespace
 
 
 #endif
-
-
-group
-data_type  size  data

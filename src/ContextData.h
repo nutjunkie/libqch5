@@ -8,19 +8,22 @@
 ********************************************************************************/
 
 #include "RawData.h"
-#include "DataType.h"
 
 
 namespace libqch5 {
 
+
 class ContextData {
 
    public:
-      ContextData(DataType dataType) : m_dataType(dataType) { }
+      enum Type {
+          Project
+      };
 
+      ContextData(Type type) : m_type(type)  { }
 
    private:
-      DataType m_dataType;
+      Type     m_type;
       RawData  m_data;
       // Attributes
 };
