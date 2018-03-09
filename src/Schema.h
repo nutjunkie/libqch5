@@ -10,7 +10,6 @@
 #include "Types.h"
 #include "st_tree.h"
 
-#include "x_common.h"
 
 namespace libqch5 {
 
@@ -32,13 +31,12 @@ class Schema {
       
       bool contains(String const&);
       unsigned depth(String const&);
+      void print();
 
-      void print() { serialize_indented(m_tree, std::cout, 4); }
+      bool operator==(Schema const& rhs);
 
    private:
       Tree m_tree;
-      Node m_node;
-
 };
 
 } // end namespace

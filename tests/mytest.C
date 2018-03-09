@@ -15,9 +15,9 @@ int main()
    hid_t   file_id;
    herr_t  status;
 
-   file_id = H5Fcreate("myfile.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
 /*
+   file_id = H5Fcreate("myfile.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
    int data[4][6] = { 1, 2, 3, 4,
                       5, 6, 7, 8,
                       9,10,11,12,
@@ -58,9 +58,8 @@ int main()
 
    //mol.put(geom);
 
-*/
-
    status = H5Fclose(file_id);
+*/
 
 
    Array<3>::Size dims = { 3, 4, 8 }; 
@@ -86,13 +85,13 @@ int main()
    }
 
 
-   RawData data;
+   RawData data("Molecule");
 
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
    Array<3>& d3(data.createArray(6,5,4));
 
-   Array<4>& d4(data.createArray<4,double>({2,3,4,5}));
+   //Array<4>& d4(data.createArray<4,double>({2,3,4,5}));
 
    d1.fill();
    d2.fill();
@@ -101,8 +100,6 @@ int main()
    d1.dump();
    d2.dump();
    d3.dump();
-
-
 
    Array<1>::Index idx1 = {9};
    Array<2>::Index idx2 = {3,5};
@@ -114,7 +111,7 @@ int main()
    
    for (size_t j = 0; j < d2.dim(1); ++j) {
        for (size_t i = 0; i < d2.dim(0); ++i) {
-           std::cout << "Array<2> " << d2({i,j}) << std::endl;
+           //std::cout << "Array<2> " << d2({i,j}) << std::endl;
        }
    }
 
@@ -135,29 +132,25 @@ int main()
 
    libqch5::ProjectFile project("myproject.h5");
 
-   Schema schema("Georges Marvelous Medicine");
+   Schema schema("G3 calculations");
 
    Schema::Node& root(schema.root());
 
-   Schema::Node& joke(root.appendChild("this is a joke"));
+   Schema::Node& molecules(root.appendChild("MoleculeGroup"));
 
-   Schema::Node& punchline(joke.appendChild("with a punchline"));
-   joke.appendChild("which makes people laugh");
-
-   punchline.appendChild("Ha Ha");
-
-   schema.appendChild("sdfad");
-   std::cout << "Schema passed 1" << std::endl;;
-
-   std::cout << "Schema passed 2" << std::endl;;
-
-   root.insert("this is another joke")[0].insert("with a punchline");
-   std::cout << "Schema passed 3" << std::endl;;
+   Schema::Node& molecule(molecules.appendChild("Molecule"));
+     Schema::Node& calculations(molecule.appendChild("Calculations"));
+     Schema::Node& geometry(molecule.appendChild("Geometry"));
 
    schema.print();
    
-   std::cout << "Schema passed" << std::endl;;
-   project.put("/data", data);
+
+   project.put("/Projects", data);
+
+
+   RawData data2("Molecule");
+   project.get("/Projects", data2);
+   project.put("/Projects2", data2);
 
    
    return 0;

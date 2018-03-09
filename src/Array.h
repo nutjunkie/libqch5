@@ -9,6 +9,7 @@
 
 #include <array>
 #include "hdf5.h"
+#include "H5Utils.h"
 
 #include "Debug.h"
 
@@ -28,12 +29,10 @@ class ArrayBase {
        virtual size_t rank() const = 0;
 
     protected:
-       static hid_t H5DataType(double) { return H5T_NATIVE_DOUBLE; }
-       static hid_t H5DataType(int)    { return H5T_NATIVE_INT; }
-
        virtual hid_t h5DataType() const = 0;
-       virtual void const*    buffer() = 0;
-       virtual size_t const* dimensions()  = 0;
+       virtual void* buffer() = 0;
+       virtual void const* buffer() const = 0;
+       virtual size_t const* dimensions() = 0;
 };
 
 
@@ -150,7 +149,9 @@ class Array : public ArrayBase {
 
 
    protected:
-      void*    buffer() { return m_data; }
+      void* buffer() { return m_data; }
+      void const* buffer() const { return m_data; }
+
       size_t*  dimensions() { return m_size.data(); }
 
    private:
