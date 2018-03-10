@@ -19,6 +19,8 @@ class RawData {
    friend class ProjectFile;
 
    public:
+       RawData(String const& label = "default") : m_label(label) { }
+
        ~RawData();
 
        /// Allocates a new Array<D,T> of Size and appends it to the list of
@@ -54,14 +56,21 @@ class RawData {
           return createArray<3,T>(size);
        }
 
+
    protected:
-       bool writeToFile(hid_t fid, char const* path) const;
+       bool write(hid_t gid) const;
+
+       /// it is assumed the label has been set appropriately before calling this function
+       bool read(hid_t gid);
 
    private:
        bool write(hid_t fid, char const* path, hid_t tid, size_t rank, 
           hsize_t const* dimensions, void const* data) const;
 
+       bool read(hid_t gid, char const* path);
+
        List<ArrayBase*> m_arrays;
+       String m_label;
        // Attributes
 };
 

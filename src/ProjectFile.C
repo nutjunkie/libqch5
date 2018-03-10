@@ -6,7 +6,9 @@
 ********************************************************************************/
 
 #include "ProjectFile.h"
+#include "H5Utils.h"
 #include "RawData.h"
+
 #include "Debug.h"
 
 namespace libqch5 {
@@ -91,7 +93,7 @@ void ProjectFile::initGroupHierarchy()
 
    group = H5Gcreate(m_fileId, "/Schema", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
    if (group < 0) {
-      m_error  = "Failed to create Consolidated Data group";
+      m_error  = "Failed to create Schema group";
       m_status = Error;
    }
 }
@@ -99,8 +101,46 @@ void ProjectFile::initGroupHierarchy()
 
 void ProjectFile::put(char const* path, RawData const& data)
 {
-   // need to open group here
-   data.writeToFile(m_fileId, path);
+   // Check if the data fits into the current Schema
+
+   hid_t gid = openGroup(m_fileId, path);
+   if (gid < 0) {
+      DEBUG("!!! Failed to open group !!!" << path);
+      return;
+   }
+
+   data.write(gid);
+   H5Gclose(gid);
 }
+
+
+void ProjectFile::get(char const* path, RawData& data)
+{
+
+   // Check if the data fits into the current Schema
+   hid_t gid = openGroup(m_fileId, path);
+   if (gid < 0) {
+      DEBUG("!!! Failed to open group !!!" << path);
+      return;
+   }
+
+   data.read(gid);
+   H5Gclose(gid);
+}
+
+
+
+
+bool ProjectFile::readSchema(Schema& schema)
+{
+   return true;
+}
+
+
+bool ProjectFile::writeSchema(Schema const& schema)
+{
+   return true;
+}
+
 
 } // end namespace

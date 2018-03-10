@@ -6,6 +6,7 @@
 ********************************************************************************/
 
 #include "RawData.h"
+#include "H5Utils.h"
 
 
 namespace libqch5 {
@@ -22,13 +23,19 @@ RawData::~RawData()
 }
 
 
-bool RawData::writeToFile(hid_t fid, char const* path) const
+bool RawData::write(hid_t gid) const
 {
+   bool ok(true);
+   DEBUG("Writing " << m_arrays.size() << " arrays to " << gid);
+
+   hid_t wgid(openGroup(gid, m_label.c_str()));
+   if (wgid < 0) return false;
+
+   int count(0);
    List<ArrayBase*>::const_iterator iter;
 
-   int i(0);
    for (iter = m_arrays.begin(); iter != m_arrays.end(); ++iter) {
-       DEBUG("Writing " << path << " to file");
+       String g(std::to_string(count++));
 
        size_t const  rank((*iter)->rank());
        size_t const* dimensions((*iter)->dimensions());
@@ -41,27 +48,158 @@ bool RawData::writeToFile(hid_t fid, char const* path) const
            dims[i] = dimensions[i];
        }
 
-       write(fid, path, tid, rank, dims, buffer);
+       DEBUG("Writing " << g << " to file, ptr-> " << *iter  << " type: " << tid);
+       ok = ok && write(wgid, g.c_str(), tid, rank, dims, buffer);
+       if (!ok)  DEBUG("!!! Write failed !!! ");
+
        delete [] dims;
    }
 
-   return true;
+   H5Gclose(wgid);
+
+   return ok;
 }
 
 
-bool RawData::write(hid_t fid, char const* path, hid_t tid, size_t rank, 
+bool RawData::write(hid_t gid, char const* path, hid_t tid, size_t rank, 
    hsize_t const* dimensions, void const* data) const
 {
+   bool ok(true);
+
    hid_t sid = H5Screate_simple(rank, dimensions, 0);
-   hid_t did = H5Dcreate(fid, path, tid, sid, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+   hid_t did = H5Dcreate(gid, path, tid, sid, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+       DEBUG("Data ID for " << path << " " << did);
 
    herr_t status;
    status = H5Dwrite(did, tid, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+   ok = ok && status >= 0;
 
    status = H5Dclose(did);
    status = H5Sclose(sid);
           
-   return true;
+   return ok;
 }
+
+
+bool RawData::read(hid_t gid)
+{
+   bool ok(true);
+   DEBUG("Reading " << m_label << " data");
+
+   hid_t wgid = H5Gopen(gid, m_label.c_str(), H5P_DEFAULT);
+   if (wgid < 0) return false;
+
+   hsize_t count(0);
+
+   // get number of data objects
+   herr_t err = H5Gget_num_objs(wgid, &count);
+   if (err < 0) return false;
+
+   DEBUG("Found " << count << " data objects");
+
+   for (hsize_t idx = 0; idx < count; ++idx) {
+       // get length of name first
+       size_t len = H5Gget_objname_by_idx(wgid, idx, 0, 0);
+       len += 1;  // add null termination
+       char* buff = new char[len]; 
+       H5Gget_objname_by_idx(wgid, idx, buff, len);
+       DEBUG("Reading dataset: " << buff);
+
+       ok = ok && read(wgid, buff);
+       delete buff;
+   }
+
+   H5Gclose(wgid);
+
+   return ok;
+}
+
+
+bool RawData::read(hid_t gid, char const* path) 
+{
+   bool ok(true);
+
+   hid_t did = H5Dopen(gid, path, H5P_DEFAULT);
+   hid_t sid = H5Dget_space(did);
+   hid_t tid = H5Dget_type(did);
+
+   // Make sure we are read in a dataset
+   if (tid != H5G_DATASET) {
+      DEBUG("Dataset not found " << tid << " vs " << H5G_DATASET);
+   }
+
+   H5T_class_t t_class;
+   t_class = H5Tget_class(tid);
+   DEBUG("t_class set to: " << t_class);
+
+   size_t rank(H5Sget_simple_extent_ndims(sid));
+
+   hsize_t* dims(new hsize_t[rank]);
+   hsize_t* max_dims(new hsize_t[rank]);
+
+   H5Sget_simple_extent_dims(sid, dims, max_dims);
+
+   for (unsigned i = 0; i < rank; ++i) {
+       DEBUG("Reading array dimension: " << dims[i] << " of " << max_dims[i]);
+   }
+
+   // we are assuming double 
+   ArrayBase* array(0);
+   herr_t status;
+
+   if (H5Tequal(tid, H5T_IEEE_F64LE)) {
+      DEBUG("This is how we test things");
+   }
+
+   if (H5Tequal(tid, H5T_NATIVE_DOUBLE)) {
+      switch (rank) {
+         case 1:  array = &createArray<double>(dims[0]);                    break;
+         case 2:  array = &createArray<double>(dims[0], dims[1]);           break;
+         case 3:  array = &createArray<double>(dims[0], dims[1], dims[2]);  break;
+
+         default: {
+            DEBUG("Unsupported rank RawData::read " << rank);
+            ok = false;
+         } break;
+      }
+
+      void* buffer(array->buffer());
+      status = H5Dread(did, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, buffer);
+
+   } else if (H5Tequal(tid, H5T_NATIVE_INT)) {
+      switch (rank) {
+         case 1:  array = &createArray<int>(dims[0]);                    break;
+         case 2:  array = &createArray<int>(dims[0], dims[1]);           break;
+         case 3:  array = &createArray<int>(dims[0], dims[1], dims[2]);  break;
+
+         default: {
+            DEBUG("Unsupported rank RawData::read " << rank);
+            ok = false;
+         } break;
+      }
+
+      void* buffer(array->buffer());
+      status = H5Dread(did, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, buffer);
+      
+   } else {
+      DEBUG("Unknown data type in RawData::read  " << tid);
+      DEBUG("Supported types:  H5T_NATIVE_INT    " << H5T_NATIVE_INT);
+      DEBUG("Supported types:  H5T_NATIVE_DOUBLE " << H5T_NATIVE_DOUBLE);
+      DEBUG("Supported types:  H5T_IEEE_F64LE    " << H5T_IEEE_F64LE);
+      DEBUG("Supported types:  H5T_FLOAT         " << H5T_FLOAT);
+      ok = false; 
+ 
+   }
+
+   ok = ok && status >= 0;
+
+   delete [] dims;
+   delete [] max_dims;
+
+   H5Dclose(did);
+
+   return ok;
+}
+
 
 } // end namespace
