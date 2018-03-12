@@ -106,7 +106,7 @@ bool RawData::read(hid_t gid)
        DEBUG("Reading dataset: " << buff);
 
        ok = ok && read(wgid, buff);
-       delete buff;
+       delete [] buff;
    }
 
    H5Gclose(wgid);
@@ -123,14 +123,13 @@ bool RawData::read(hid_t gid, char const* path)
    hid_t sid = H5Dget_space(did);
    hid_t tid = H5Dget_type(did);
 
-   // Make sure we are read in a dataset
-   if (tid != H5G_DATASET) {
-      DEBUG("Dataset not found " << tid << " vs " << H5G_DATASET);
+   // Make sure we are reading in a dataset
+   H5T_class_t typeClass = H5Tget_class(tid);
+   DEBUG("t_class set to: " << typeClass);
+   if ((typeClass != H5G_DATASET)) {
+      DEBUG("Dataset not found " << typeClass << " vs " << H5G_DATASET);
+      return false;
    }
-
-   H5T_class_t t_class;
-   t_class = H5Tget_class(tid);
-   DEBUG("t_class set to: " << t_class);
 
    size_t rank(H5Sget_simple_extent_ndims(sid));
 
@@ -145,14 +144,11 @@ bool RawData::read(hid_t gid, char const* path)
 
    // we are assuming double 
    ArrayBase* array(0);
-   herr_t status;
-
-   if (H5Tequal(tid, H5T_IEEE_F64LE)) {
-      DEBUG("This is how we test things");
-   }
+   herr_t status(0);
 
    if (H5Tequal(tid, H5T_NATIVE_DOUBLE)) {
       switch (rank) {
+         DEBUG("RawData::read reading H5T_NATIVE_DOUBLE");
          case 1:  array = &createArray<double>(dims[0]);                    break;
          case 2:  array = &createArray<double>(dims[0], dims[1]);           break;
          case 3:  array = &createArray<double>(dims[0], dims[1], dims[2]);  break;
@@ -168,6 +164,7 @@ bool RawData::read(hid_t gid, char const* path)
 
    } else if (H5Tequal(tid, H5T_NATIVE_INT)) {
       switch (rank) {
+         DEBUG("RawData::read reading H5T_NATIVE_INT");
          case 1:  array = &createArray<int>(dims[0]);                    break;
          case 2:  array = &createArray<int>(dims[0], dims[1]);           break;
          case 3:  array = &createArray<int>(dims[0], dims[1], dims[2]);  break;

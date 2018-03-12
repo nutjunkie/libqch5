@@ -9,21 +9,34 @@
 #include "H5Utils.h"
 #include "RawData.h"
 
+#include "hdf5_hl.h"
+
 #include "Debug.h"
 
 namespace libqch5 {
 
-
-ProjectFile::ProjectFile(char const* path) : m_fileId(0), m_status(Closed)
+ProjectFile::ProjectFile(char const* path, Schema const& schema) : m_fileId(0), 
+   m_status(Closed), m_schema(schema)
 {
-   open(path);
-   if (m_status != Open)  init(path);
+   // Turn off automatic printing of error messages
+   H5Eset_auto(0,0,0);
+//H5G_loc_find
+DEBUG("WARN: Don't truncate the file when opening");
+   init(path);
 
    if (m_status != Open) {
       DEBUG("Failed to open project archive " << path);
    }else {
       DEBUG("Opened " << path);
    }
+}
+
+
+ProjectFile::ProjectFile(char const* path) : m_fileId(0), m_status(Closed)
+{
+   // Turn off automatic printing of error messages
+   H5Eset_auto(0,0,0);
+   open(path);
 }
 
 
@@ -35,14 +48,13 @@ ProjectFile::~ProjectFile()
 
 void ProjectFile::open(char const* path)
 {
-   // Turn off automatic printing of error messages
-   H5Eset_auto(0,0,0);
-
    m_fileId = H5Fopen(path, H5F_ACC_RDWR, H5P_DEFAULT);
 
    if (m_fileId > 0) {
       DEBUG("Opening exisiting file " << path);
       m_status = Open;
+   }else {
+      DEBUG("Failed to open project archive " << path);
    }
 }
 
@@ -129,6 +141,33 @@ void ProjectFile::get(char const* path, RawData& data)
 }
 
 
+bool ProjectFile::exists(char const* path) const
+{
+   hbool_t checkObjectValid(false);
+   htri_t valid = H5LTpath_valid( m_fileId, path, checkObjectValid);
+   DEBUG("Path check returned: " << valid);
+   return valid;
+}
+
+
+bool ProjectFile::exists(char const* path, RawData const& data) const
+{
+   // check path exists
+   String p(path);
+   p += "/" + data.label();
+   hbool_t checkObjectValid(false);
+   htri_t valid = H5LTpath_valid( m_fileId, p.c_str(), checkObjectValid);
+   DEBUG("Path check returned: " << valid);
+   return valid;
+}
+
+
+bool ProjectFile::isValid(char const* path, RawData const& data) const
+{
+   bool valid(exists(path));
+   valid = valid && m_schema.isValid(path, data);
+   return valid;
+}
 
 
 bool ProjectFile::readSchema(Schema& schema)
@@ -141,6 +180,5 @@ bool ProjectFile::writeSchema(Schema const& schema)
 {
    return true;
 }
-
 
 } // end namespace

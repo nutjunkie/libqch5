@@ -10,7 +10,7 @@
 #include "hdf5.h"
 #include "Array.h"
 #include "Types.h"
-
+#include "DataType.h"
 
 namespace libqch5 {
 
@@ -19,9 +19,14 @@ class RawData {
    friend class ProjectFile;
 
    public:
-       RawData(String const& label = "default") : m_label(label) { }
+       RawData(String const& label = "Untitled", 
+          DataType::Id const& type = DataType::Base) 
+        : m_label(label), m_type(type) { }
 
        ~RawData();
+
+       String const& label()   const { return m_label; }
+       DataType::Id dataType() const { return m_type; }
 
        /// Allocates a new Array<D,T> of Size and appends it to the list of
        /// known data.
@@ -70,7 +75,8 @@ class RawData {
        bool read(hid_t gid, char const* path);
 
        List<ArrayBase*> m_arrays;
-       String m_label;
+       String       m_label;
+       DataType::Id m_type;
        // Attributes
 };
 

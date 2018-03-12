@@ -15,21 +15,29 @@ String DataType::toString(Id id)
    String s;
 
    switch(id) {
+      case Base:                      s = "BaseData";                  break;
       case Project:                   s = "Project";                   break;
       case ProjectGroup:              s = "ProjectGroup";              break;
       case Molecule:                  s = "Molecule";                  break;
       case Calculation:               s = "Calculation";               break;
       case CalculationGroup:          s = "CalculationGroup";          break;
+      case Invalid:                   s = "Invalid";                   break;
    }
 
    return s;
 }
 
-DataType::id DataType::toId(String const& s)
+DataType::Id DataType::toId(String const& s)
 {
-   id 
-   for (unsigned i = 0; i < MaxDataTypeId; ++i) {
+   for (unsigned i = 0; i < Invalid; ++i) {
+       Id id( (Id)i );
+       if (toString(id) == s) {
+          return id;
+          break;
+       } 
    }
+
+   return Invalid;
 }
 
 } // end namespace

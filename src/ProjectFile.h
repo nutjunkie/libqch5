@@ -22,6 +22,7 @@ class ProjectFile {
    public:
       enum Status { Closed, Open, Error };
       
+      /// Opens an exisint Project file.  The Shema is loaded from the file
       ProjectFile(char const* filePath);
 
 	  /// Opens a new Project file and sets the given Schema.  If the file
@@ -36,6 +37,11 @@ class ProjectFile {
 
       void put(char const* path, RawData const& data);
       void get(char const* path, RawData& data);
+
+      bool exists(char const* path) const;
+      bool exists(char const* path, RawData const& data) const;
+
+      bool isValid(char const* path, RawData const& data) const;
 
    private:
       /// Sets-up the appropriate hierarchy for a new project file
@@ -62,7 +68,6 @@ class ProjectFile {
       String  m_error;
       hid_t   m_fileId;
       Status  m_status;
-
       Schema  m_schema;
 };
 

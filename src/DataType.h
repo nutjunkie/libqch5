@@ -7,13 +7,15 @@
 
 ********************************************************************************/
 
+#include "Types.h"
+
 
 namespace libqch5 {
 
 class DataType {
 
    public:
-      enum Id { Invalid = 0,
+      enum Id { Base = 0,
                 ProjectGroup,
                 Project, 
                 MoleculeGroup,
@@ -26,25 +28,12 @@ class DataType {
                 Calculation,
                 PropertyGroup,
                 Property,
-                MaxDataTypeId 
+                Invalid
               };
 
       static Id toId(String const&);
-
       static String toString(Id);
 
-String Schema::toString(DataType dataType)
-{
-   String s;
-
-   switch(dataType) {
-      case Project:      s = "Project";      break;
-      case Molecule:     s = "Molecule";     break;
-      case Calculation:  s = "Calculation";  break;
-   }
-
-   return s;
-}
 };
 
 } // end namespace

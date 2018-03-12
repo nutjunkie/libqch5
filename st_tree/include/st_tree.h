@@ -187,16 +187,12 @@ struct tree {
         return *_root;
     }
 
-    //ATBG
-    //node_type&  insert(const data_type& data) {
     void insert(const data_type& data) {
-std::cout << "Using insert data_type" << std::endl;
         clear();
         _root = _new_node();
         _root->_data = data;
         _root->_tree = this;
         _root->_depth.insert(1);
-//        return (*_root);
     }
 
     // there is only one node to erase from the tree: the root
@@ -227,7 +223,6 @@ std::cout << "Using insert data_type" << std::endl;
     }
 
     void insert(const node_type& src) {
-std::cout << "Using insert node_type" << std::endl;
         node_type* n = src._copy_data(*this);
         node_base_type::_thread(n);
         clear();
@@ -236,7 +231,6 @@ std::cout << "Using insert node_type" << std::endl;
     }
 
     void insert(const tree_type& src) {
-std::cout << "Using insert tree_type" << std::endl;
         node_type* n = src._copy_data(*this);
         if (src.empty()) erase();
         else insert(src.root());
@@ -314,7 +308,6 @@ const typename tree<Data, CSModel, Alloc>::node_type tree<Data, CSModel, Alloc>:
 
 
 }  // namespace st_tree
-
 
 
 #endif  // __st_tree_h__

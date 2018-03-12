@@ -9,10 +9,12 @@
 
 #include "Types.h"
 #include "st_tree.h"
+#include "DataType.h"
 
 
 namespace libqch5 {
 
+class RawData;
 
 /// Schemas determine the heirarchy of the data storage for a given ProjctFile.
 /// We allow strings on the assumption that any unrecognised ContextData type can
@@ -24,14 +26,17 @@ class Schema {
       typedef st_tree::tree<String>::node_type Node;
 
    public:
-      Schema(String const& root = "Root");
+      Schema(String const& root = "Projects");
 
       Node& root() { return m_tree.root(); };
       Node& appendChild(String const& data);
+
+      bool isValid(char const* path, RawData const&) const;
       
-      bool contains(String const&);
-      unsigned depth(String const&);
-      void print();
+      bool contains(String const&) const;
+      unsigned depth(char const* path) const;
+      unsigned depth(DataType::Id id) const;
+      void print() const;
 
       bool operator==(Schema const& rhs);
 

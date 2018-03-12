@@ -34,6 +34,7 @@ template <typename Iterator, typename Stream>
 void serialize_indented(const Iterator& F, const Iterator& L, Stream& s, unsigned indent=2) {
     for (Iterator j(F);  j != L;  ++j) {
         s << indent_padding(j->ply() * indent);
+        //s << j->data() << " ply(" << j->ply() << ")";
         s << j->data();
         s << "\n";
     }

@@ -85,7 +85,7 @@ int main()
    }
 
 
-   RawData data("Molecule");
+   RawData data;
 
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
@@ -117,41 +117,38 @@ int main()
 
    d3({3,4,2}) = 345;
 
-#if 0
-   for (idx3[2] = 0; idx3[2] < 4; ++idx3[2]) {
-       for (idx3[1] = 0; idx3[1] < 5; ++idx3[1]) {
-            for (idx3[0] = 0; idx3[0] < 6; ++idx3[0]) {
-			    std::cout << "Array<3> " << idx3[0] << " "
-                                         << idx3[1] << " " 
-                                         << idx3[2] << "   " 
-                                         << d3(idx3) << std::endl;
-            }
-       }
-   }
-#endif
 
-   libqch5::ProjectFile project("myproject.h5");
 
    Schema schema("G3 calculations");
-
    Schema::Node& root(schema.root());
-
-   Schema::Node& molecules(root.appendChild("MoleculeGroup"));
-
-   Schema::Node& molecule(molecules.appendChild("Molecule"));
-     Schema::Node& calculations(molecule.appendChild("Calculations"));
-     Schema::Node& geometry(molecule.appendChild("Geometry"));
+      Schema::Node& molecules(root.appendChild("MoleculeGroup"));
+      Schema::Node& molecule(molecules.appendChild("Molecule"));
+         Schema::Node& calculations(molecule.appendChild("Calculations"));
+         Schema::Node& geometry(molecule.appendChild("Geometry"));
+      Schema::Node& thermochemical(root.appendChild("Thermochemical"));
+      Schema::Node& zpve(thermochemical.appendChild("ZPVE"));
 
    schema.print();
-   
+
+   libqch5::ProjectFile project("myproject.h5", schema);
 
    project.put("/Projects", data);
 
+   DEBUG("Check this: " << project.exists("/Projects"));
+   DEBUG("Check this: " << project.exists("/Projects/Untitled"));
+   DEBUG("Check this: " << project.exists("/Projects/Untitled/0"));
+   DEBUG("Check this: " << project.exists("/Projects", data));
+   DEBUG("Check this: " << project.isValid("/Projects", data));
 
-   RawData data2("Molecule");
+   RawData data2;
    project.get("/Projects", data2);
    project.put("/Projects2", data2);
 
+   schema.isValid("/Projects", data);
+   schema.isValid("/Projects/Molecules/", data);
+
+   unsigned depth(schema.depth(DataType::Molecule));
+   DEBUG("Ply depth " << depth);
    
    return 0;
 }
