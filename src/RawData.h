@@ -63,9 +63,12 @@ class RawData {
 
 
    protected:
+       
        bool write(hid_t gid) const;
 
-       /// it is assumed the label has been set appropriately before calling this function
+	   /// Attempts to read the data contained in the gid into this object.  It
+	   /// is assumed the label has been set appropriately before calling this
+	   /// function.
        bool read(hid_t gid);
 
    private:

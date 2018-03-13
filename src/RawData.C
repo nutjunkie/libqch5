@@ -84,28 +84,46 @@ bool RawData::write(hid_t gid, char const* path, hid_t tid, size_t rank,
 bool RawData::read(hid_t gid)
 {
    bool ok(true);
-   DEBUG("Reading " << m_label << " data");
 
    hid_t wgid = H5Gopen(gid, m_label.c_str(), H5P_DEFAULT);
    if (wgid < 0) return false;
 
-   hsize_t count(0);
-
    // get number of data objects
+   hsize_t count(0);
    herr_t err = H5Gget_num_objs(wgid, &count);
    if (err < 0) return false;
 
-   DEBUG("Found " << count << " data objects");
+   DEBUG("Found " << count << " data objects in " << m_label);
 
    for (hsize_t idx = 0; idx < count; ++idx) {
-       // get length of name first
+ 
+       // get length of name first..
        size_t len = H5Gget_objname_by_idx(wgid, idx, 0, 0);
-       len += 1;  // add null termination
+       len += 1;  // ..add null termination..
        char* buff = new char[len]; 
+       // ..and then read the name.  In most cases this will just be
+       // the index.
        H5Gget_objname_by_idx(wgid, idx, buff, len);
        DEBUG("Reading dataset: " << buff);
+	   int otype = H5Gget_objtype_by_idx(wgid, idx);
 
-       ok = ok && read(wgid, buff);
+       switch (otype) {
+          case H5G_GROUP:
+             // Could enable recursive search for data.  We would need
+             // to create a new RawData object here.
+             DEBUG("WARN: Attempt to read subgroup in RawData::read");
+             break;
+          case H5G_DATASET:
+             ok = ok && read(wgid, buff);
+             break;
+          case H5G_LINK:
+          case H5G_TYPE:
+          default:
+             DEBUG("WARN: Unrecognised object type in RawData::read");
+             ok = false;
+             break;
+       }
+
        delete [] buff;
    }
 
@@ -122,14 +140,6 @@ bool RawData::read(hid_t gid, char const* path)
    hid_t did = H5Dopen(gid, path, H5P_DEFAULT);
    hid_t sid = H5Dget_space(did);
    hid_t tid = H5Dget_type(did);
-
-   // Make sure we are reading in a dataset
-   H5T_class_t typeClass = H5Tget_class(tid);
-   DEBUG("t_class set to: " << typeClass);
-   if ((typeClass != H5G_DATASET)) {
-      DEBUG("Dataset not found " << typeClass << " vs " << H5G_DATASET);
-      return false;
-   }
 
    size_t rank(H5Sget_simple_extent_ndims(sid));
 
