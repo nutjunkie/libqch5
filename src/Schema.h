@@ -22,23 +22,25 @@ class RawData;
 class Schema {
 
    public:
-      typedef st_tree::tree<String> Tree;
-      typedef st_tree::tree<String>::node_type Node;
+      typedef st_tree::tree<DataType> Tree;
+      typedef st_tree::tree<DataType>::node_type Node;
 
    public:
-      Schema(String const& root = "Projects");
+      Schema(DataType const root = DataType::ProjectGroup);
 
       Node& root() { return m_tree.root(); };
       Node& appendChild(String const& data);
+      Node& appendChild(DataType const& id);
 
       bool isValid(char const* path, RawData const&) const;
+
+      unsigned depth(DataType const& type) const;
+      unsigned depth(char const* path) const;
       
       bool contains(String const&) const;
-      unsigned depth(char const* path) const;
-      unsigned depth(DataType::Id id) const;
       void print() const;
 
-      bool operator==(Schema const& rhs);
+      bool operator==(Schema const& rhs) const;
 
    private:
       Tree m_tree;

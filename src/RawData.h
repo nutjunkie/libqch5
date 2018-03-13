@@ -26,7 +26,7 @@ class RawData {
        ~RawData();
 
        String const& label()   const { return m_label; }
-       DataType::Id dataType() const { return m_type; }
+       DataType const& dataType() const { return m_type; }
 
        /// Allocates a new Array<D,T> of Size and appends it to the list of
        /// known data.
@@ -75,8 +75,8 @@ class RawData {
        bool read(hid_t gid, char const* path);
 
        List<ArrayBase*> m_arrays;
-       String       m_label;
-       DataType::Id m_type;
+       String    m_label;
+       DataType  m_type;
        // Attributes
 };
 

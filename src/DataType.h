@@ -15,6 +15,8 @@ namespace libqch5 {
 class DataType {
 
    public:
+	  /// Note the default id is Base allowing user defined data strucutures as
+	  /// long as they interface generically.
       enum Id { Base = 0,
                 ProjectGroup,
                 Project, 
@@ -31,12 +33,28 @@ class DataType {
                 Invalid
               };
 
-      static Id toId(String const&);
-      static String toString(Id);
+      DataType();
+      DataType(String const&);
+      DataType(unsigned const);
+      DataType(DataType const& that);
+    
+      String toString() const;
+      static String toString(Id const);
 
+      bool operator==(DataType const& rhs) const;
+      bool operator!=(DataType const& rhs) const;
+
+      friend std::ostream& operator<<(std::ostream& out, DataType const& data)
+      {
+         out << data.toString();
+         return out;
+      }
+
+   private:
+      Id m_id;
 };
 
-} // end namespace
 
+} // end namespace
 
 #endif

@@ -119,14 +119,13 @@ int main()
 
 
 
-   Schema schema("G3 calculations");
+   Schema schema;
    Schema::Node& root(schema.root());
-      Schema::Node& molecules(root.appendChild("MoleculeGroup"));
-      Schema::Node& molecule(molecules.appendChild("Molecule"));
-         Schema::Node& calculations(molecule.appendChild("Calculations"));
-         Schema::Node& geometry(molecule.appendChild("Geometry"));
-      Schema::Node& thermochemical(root.appendChild("Thermochemical"));
-      Schema::Node& zpve(thermochemical.appendChild("ZPVE"));
+      Schema::Node& molecules(root.appendChild(DataType::MoleculeGroup));
+      Schema::Node& molecule(molecules.appendChild(DataType::Molecule));
+         Schema::Node& calculations(molecule.appendChild(DataType::Calculation));
+         Schema::Node& geometry(molecule.appendChild(DataType::Geometry));
+      Schema::Node& thermochemical(root.appendChild(DataType::Property));
 
    schema.print();
 
