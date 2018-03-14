@@ -29,35 +29,24 @@ bool RawData::write(hid_t gid) const
    bool ok(true);
    DEBUG("Writing " << m_arrays.size() << " arrays to " << gid);
 
-   unsigned dt(999);
-   herr_t status;
-
-   //unsigned dt(m_type.toUInt());
-   status = H5LTset_attribute_uint(gid, "Untitled", "attr_name", &dt, 1);
-   DEBUG("");
-   DEBUG("Setting attribute " <<  m_label.c_str() << " attr_name " << dt << "  " << status);
-   DEBUG("");
-
-
-
-    /* Create an attribute for the dataset */
-/*
-    int attr_data = dt;
-    hid_t attr = H5Acreate(gid, "attr_name", H5T_NATIVE_INT, H5S_SCALAR, H5P_DEFAULT, H5P_DEFAULT);
-   DEBUG("Setting attribute on group " <<  gid << " attr_name " << attr_data << "  " << attr);
-    H5Awrite(attr, H5T_NATIVE_INT, &attr_data);
-    H5Aclose(attr);
-*/
+   DEBUG("\n");
+   DEBUG("Iterating over gid");
+   listGroup(gid);
+   DEBUG("\n");
 
    hid_t wgid(openGroup(gid, m_label.c_str()));
    if (wgid < 0) return false;
 
-   //unsigned dt(m_type.toUInt());
-   status = H5LTset_attribute_uint(wgid, m_label.c_str(), "attr_name", &dt, 1);
+   DEBUG("\n");
+   DEBUG("Iterating over gid");
+   listGroup(gid);
+   DEBUG("\n");
+
+   unsigned dt(m_type.toUInt());
+   herr_t status = H5LTset_attribute_uint(gid, m_label.c_str(), "attr_name", &dt, 1);
    DEBUG("");
    DEBUG("Setting attribute " <<  m_label.c_str() << " attr_name " << dt << "  " << status);
    DEBUG("");
-
 
    int count(0);
    List<ArrayBase*>::const_iterator iter;
