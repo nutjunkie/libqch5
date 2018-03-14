@@ -51,10 +51,18 @@ DataType::DataType(unsigned const n) : m_id(Base)
    if (n < Invalid) m_id = (Id)n;
 }
 
+
+unsigned DataType::toUInt() const
+{
+   return static_cast<unsigned>(m_id);
+}
+
+
 String DataType::toString() const
 {
    return toString(m_id);
 }
+
 
 String DataType::toString(Id id)
 {

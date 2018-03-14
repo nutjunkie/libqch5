@@ -19,7 +19,7 @@ ProjectFile::ProjectFile(char const* path, Schema const& schema) : m_fileId(0),
    m_status(Closed), m_schema(schema)
 {
    // Turn off automatic printing of error messages
-   H5Eset_auto(0,0,0);
+//   H5Eset_auto(0,0,0);
 //H5G_loc_find
 DEBUG("WARN: Don't truncate the file when opening");
    init(path);
@@ -120,6 +120,9 @@ void ProjectFile::put(char const* path, RawData const& data)
       DEBUG("!!! Failed to open group !!!" << path);
       return;
    }
+
+   H5Gclose(gid);
+   gid = openGroup(m_fileId, path);
 
    data.write(gid);
    H5Gclose(gid);

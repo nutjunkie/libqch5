@@ -7,6 +7,7 @@
 
 #include "RawData.h"
 #include "H5Utils.h"
+#include "hdf5_hl.h"
 
 
 namespace libqch5 {
@@ -28,8 +29,35 @@ bool RawData::write(hid_t gid) const
    bool ok(true);
    DEBUG("Writing " << m_arrays.size() << " arrays to " << gid);
 
+   unsigned dt(999);
+   herr_t status;
+
+   //unsigned dt(m_type.toUInt());
+   status = H5LTset_attribute_uint(gid, "Untitled", "attr_name", &dt, 1);
+   DEBUG("");
+   DEBUG("Setting attribute " <<  m_label.c_str() << " attr_name " << dt << "  " << status);
+   DEBUG("");
+
+
+
+    /* Create an attribute for the dataset */
+/*
+    int attr_data = dt;
+    hid_t attr = H5Acreate(gid, "attr_name", H5T_NATIVE_INT, H5S_SCALAR, H5P_DEFAULT, H5P_DEFAULT);
+   DEBUG("Setting attribute on group " <<  gid << " attr_name " << attr_data << "  " << attr);
+    H5Awrite(attr, H5T_NATIVE_INT, &attr_data);
+    H5Aclose(attr);
+*/
+
    hid_t wgid(openGroup(gid, m_label.c_str()));
    if (wgid < 0) return false;
+
+   //unsigned dt(m_type.toUInt());
+   status = H5LTset_attribute_uint(wgid, m_label.c_str(), "attr_name", &dt, 1);
+   DEBUG("");
+   DEBUG("Setting attribute " <<  m_label.c_str() << " attr_name " << dt << "  " << status);
+   DEBUG("");
+
 
    int count(0);
    List<ArrayBase*>::const_iterator iter;
@@ -54,6 +82,10 @@ bool RawData::write(hid_t gid) const
 
        delete [] dims;
    }
+
+   unsigned dt2(999);
+   status = H5LTset_attribute_uint(wgid, "0", "attr_name", &dt2, 1);
+   DEBUG("Setting attribute " <<  "0" << " attr_name " << dt2 << "  " << status);
 
    H5Gclose(wgid);
 
@@ -84,6 +116,10 @@ bool RawData::write(hid_t gid, char const* path, hid_t tid, size_t rank,
 bool RawData::read(hid_t gid)
 {
    bool ok(true);
+
+   unsigned dt(999);;
+   herr_t status = H5LTget_attribute_uint(gid, m_label.c_str(), "attr_name", &dt);
+   DEBUG("Getting attribute " <<  m_label.c_str() << " attr_name " << dt << "  " << status);
 
    hid_t wgid = H5Gopen(gid, m_label.c_str(), H5P_DEFAULT);
    if (wgid < 0) return false;

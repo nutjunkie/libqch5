@@ -37,7 +37,6 @@ class Schema {
       unsigned depth(DataType const& type) const;
       unsigned depth(char const* path) const;
       
-      bool contains(String const&) const;
       void print() const;
 
       bool operator==(Schema const& rhs) const;

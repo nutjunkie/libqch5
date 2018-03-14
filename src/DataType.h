@@ -38,6 +38,7 @@ class DataType {
       DataType(unsigned const);
       DataType(DataType const& that);
     
+      unsigned toUInt() const;
       String toString() const;
       static String toString(Id const);
 

@@ -48,7 +48,7 @@ unsigned Schema::depth(DataType const& type) const
 {
    Tree::const_iterator iter;
    for (iter = m_tree.bf_begin(); iter != m_tree.bf_end(); ++iter) {
-        std::cout << iter->data().toString() << " ply(" << iter->ply() << ")" << "\n";
+        DEBUG("Depth test ply(" << iter->ply() << ") " << iter->data().toString() );
         if (iter->data() == type) break;
     }
 
@@ -66,14 +66,6 @@ unsigned Schema::depth(char const* path) const
 }
 
 
-
-
-
-
-bool Schema::contains(String const&)  const
-{
-   return true;
-}
 
 
 

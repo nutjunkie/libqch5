@@ -61,38 +61,40 @@ int main()
    status = H5Fclose(file_id);
 */
 
+   // Array
+   
+   /// Each Array<T> has associated Size and Index types that can be used for
+   /// setting up the size of the array and accessing its elements.
 
    Array<3>::Size dims = { 3, 4, 8 }; 
-
    Array<3> array(dims);
-   array.clear();
-   array.fill();
 
+   array.fill();  // Fill array with offset data for debugging
+
+   /// We can access an element using an Index type:
    Array<3>::Index idx = { 0, 1, 3 }; 
 
    for (idx[0] = 0; idx[0] < array.dim(0); ++idx[0]) {
-   array(idx);
+       DEBUG("Array element ("<< idx[0] << "," << idx[1] << ","
+               << idx[2] << ") = " << array(idx));
    }
 
+   /// We can also access an element directly using aggregate initialization:
+   array({3,4,2}) = 345;
 
+   /// The default type of an arry is double, but the class is templated:
    Array<1>::Size d = { 8 }; 
-   Array<1>::Index i = { 3 }; 
    Array<1, int> list(d);
-   list.fill();
-
-   for (i[0] = 0; i[0] < list.dim(0); ++i[0]) {
-       list(i);
-   }
 
 
+   /// The RawData class has convenience functions that create array objects
+   /// and manage their data.  These are only available for D1-3
    RawData data;
 
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
    Array<3>& d3(data.createArray(6,5,4));
-
-   //Array<4>& d4(data.createArray<4,double>({2,3,4,5}));
-
+   
    d1.fill();
    d2.fill();
    d3.fill();
@@ -109,14 +111,6 @@ int main()
    std::cout << "test print " << d2(idx2) << " length " << d2.length() << std::endl;
    std::cout << "test print " << d3(idx3) << " length " << d3.length() << std::endl;
    
-   for (size_t j = 0; j < d2.dim(1); ++j) {
-       for (size_t i = 0; i < d2.dim(0); ++i) {
-           //std::cout << "Array<2> " << d2({i,j}) << std::endl;
-       }
-   }
-
-   d3({3,4,2}) = 345;
-
 
 
    Schema schema;
@@ -127,7 +121,9 @@ int main()
          Schema::Node& geometry(molecule.appendChild(DataType::Geometry));
       Schema::Node& thermochemical(root.appendChild(DataType::Property));
 
+   std::cout << std::endl;
    schema.print();
+   std::cout << std::endl;
 
    libqch5::ProjectFile project("myproject.h5", schema);
 
