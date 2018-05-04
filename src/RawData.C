@@ -29,13 +29,21 @@ RawData::~RawData()
 bool RawData::write(hid_t gid) const
 {
    DEBUG("Writing " << m_arrays.size() << " arrays to " << gid);
+
    bool ok(true);
+
+   DEBUG("\n");
+   DEBUG("Iterating over gid");
+   listGroup(gid);
+   DEBUG("\n");
+
 
    hid_t wgid(openGroup(gid, m_label.c_str()));
    if (wgid < 0) return false;
 
    // Write attributes
    m_attributes.write(gid, m_label.c_str());
+
 
    // Write array data
    int  index(0);
