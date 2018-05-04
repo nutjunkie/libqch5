@@ -5,6 +5,8 @@
   This file is part of libqch5 a data file format for managing quantum 
   chemistry projects.
 
+  Copyright (C) 2018 Andrew Gilbert
+
 ********************************************************************************/
 
 #include "hdf5.h"
@@ -35,8 +37,8 @@ class ProjectFile {
 
       String const& error() const { return m_error; }
 
-      void put(char const* path, RawData const& data);
-      void get(char const* path, RawData& data);
+      void write(char const* path, RawData const& data);
+      void read( char const* path, RawData& data);
 
       bool exists(char const* path) const;
       bool exists(char const* path, RawData const& data) const;

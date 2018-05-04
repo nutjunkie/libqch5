@@ -3,6 +3,8 @@
   This file is part of libqchd5 a data file format for managing quantum 
   chemistry projects.
 
+  Copyright (C) 2018 Andrew Gilbert
+
 ********************************************************************************/
 
 #include "Schema.h"
@@ -64,9 +66,6 @@ unsigned Schema::depth(char const* path) const
 
    return std::count(s.begin(), s.end(), '/');
 }
-
-
-
 
 
 void Schema::print() const

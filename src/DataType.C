@@ -3,6 +3,8 @@
   This file is part of libqchd5 a data file format for managing quantum 
   chemistry projects.
 
+  Copyright (C) 2018 Andrew Gilbert
+
 ********************************************************************************/
 
 #include "DataType.h"
@@ -10,8 +12,7 @@
 
 namespace libqch5 {
 
-// Case insensitve matching
-bool equals_ic(const String& a, const String& b)
+bool caseInsensitiveEquals(const String& a, const String& b)
 {
     unsigned int sz = a.size();
     if (b.size() != sz)
@@ -38,7 +39,7 @@ DataType::DataType(String const& s) : m_id(Base)
 {
    for (unsigned i = 0; i < Invalid; ++i) {
        Id id( (Id)i );
-       if (equals_ic(toString(id),s)) {
+       if (caseInsensitiveEquals(toString(id),s)) {
           m_id = id;
           break;
        } 

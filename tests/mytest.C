@@ -53,10 +53,9 @@ int main()
 
    //libqch5::DataSpace dataSpace;
 
-   project.put("example",mol);
+   project.("example",mol);
 
 
-   //mol.put(geom);
 
    status = H5Fclose(file_id);
 */
@@ -89,7 +88,13 @@ int main()
 
    /// The RawData class has convenience functions that create array objects
    /// and manage their data.  These are only available for D1-3
-   RawData data;
+   RawData data("Ethanol", DataType::Molecule);
+
+   data.setAttribute("T1", 50);
+   data.setAttribute("convergence", 23);
+   data.setAttribute("Happiness", "very");
+   data.setAttribute("pi", 3.1415);
+   data.setAttribute("T1", 3);
 
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
@@ -127,23 +132,25 @@ int main()
 
    libqch5::ProjectFile project("myproject.h5", schema);
 
-   project.put("/Projects", data);
+   project.write("/Projects", data);
 
    DEBUG("Check this: " << project.exists("/Projects"));
    DEBUG("Check this: " << project.exists("/Projects/Untitled"));
-   DEBUG("Check this: " << project.exists("/Projects/Untitled/0"));
+   DEBUG("Check this: " << project.exists("/Projects/Ethanol/0"));
    DEBUG("Check this: " << project.exists("/Projects", data));
    DEBUG("Check this: " << project.isValid("/Projects", data));
 
    RawData data2;
-   project.get("/Projects", data2);
-   project.put("/Projects2", data2);
+   project.read("/Projects/Ethanol", data2);
+   project.write("/Projects2", data2);
 
    schema.isValid("/Projects", data);
    schema.isValid("/Projects/Molecules/", data);
 
    unsigned depth(schema.depth(DataType::Molecule));
    DEBUG("Ply depth " << depth);
+   DEBUG("");
+   DEBUG("");
    
    return 0;
 }

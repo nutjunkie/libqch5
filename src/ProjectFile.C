@@ -3,6 +3,8 @@
   This file is part of libqchd5 a data file format for managing quantum 
   chemistry projects.
 
+  Copyright (C) 2018 Andrew Gilbert
+
 ********************************************************************************/
 
 #include "ProjectFile.h"
@@ -19,7 +21,7 @@ ProjectFile::ProjectFile(char const* path, Schema const& schema) : m_fileId(0),
    m_status(Closed), m_schema(schema)
 {
    // Turn off automatic printing of error messages
-//   H5Eset_auto(0,0,0);
+   H5Eset_auto(0,0,0);
 //H5G_loc_find
 DEBUG("WARN: Don't truncate the file when opening");
    init(path);
@@ -111,7 +113,7 @@ void ProjectFile::initGroupHierarchy()
 }
 
 
-void ProjectFile::put(char const* path, RawData const& data)
+void ProjectFile::write(char const* path, RawData const& data)
 {
    // Check if the data fits into the current Schema
 
@@ -121,15 +123,12 @@ void ProjectFile::put(char const* path, RawData const& data)
       return;
    }
 
-   H5Gclose(gid);
-   gid = openGroup(m_fileId, path);
-
    data.write(gid);
    H5Gclose(gid);
 }
 
 
-void ProjectFile::get(char const* path, RawData& data)
+void ProjectFile::read(char const* path, RawData& data)
 {
 
    // Check if the data fits into the current Schema
@@ -148,7 +147,7 @@ bool ProjectFile::exists(char const* path) const
 {
    hbool_t checkObjectValid(false);
    htri_t valid = H5LTpath_valid( m_fileId, path, checkObjectValid);
-   DEBUG("Path check returned: " << valid);
+   //DEBUG("Path check returned: " << valid);
    return valid;
 }
 
@@ -160,7 +159,7 @@ bool ProjectFile::exists(char const* path, RawData const& data) const
    p += "/" + data.label();
    hbool_t checkObjectValid(false);
    htri_t valid = H5LTpath_valid( m_fileId, p.c_str(), checkObjectValid);
-   DEBUG("Path check returned: " << valid);
+   //DEBUG("Path check returned: " << valid);
    return valid;
 }
 
@@ -175,12 +174,14 @@ bool ProjectFile::isValid(char const* path, RawData const& data) const
 
 bool ProjectFile::readSchema(Schema& schema)
 {
+   DEBUG("ProjectFile::readSchema NYI!!!");
    return true;
 }
 
 
 bool ProjectFile::writeSchema(Schema const& schema)
 {
+   DEBUG("ProjectFile::writeSchema NYI!!!");
    return true;
 }
 

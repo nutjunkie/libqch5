@@ -5,6 +5,8 @@
   This file is part of libqch5 a data file format for managing quantum 
   chemistry projects.
 
+  Copyright (C) 2018 Andrew Gilbert
+
 ********************************************************************************/
 
 #include "Types.h"

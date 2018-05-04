@@ -5,12 +5,16 @@
   This file is part of libqch5 a data file format for managing quantum 
   chemistry projects.
 
+  Copyright (C) 2018 Andrew Gilbert
+
 ********************************************************************************/
 
 #include "hdf5.h"
 #include "Array.h"
 #include "Types.h"
 #include "DataType.h"
+#include "Attributes.h"
+
 
 namespace libqch5 {
 
@@ -27,6 +31,17 @@ class RawData {
 
        String const& label()   const { return m_label; }
        DataType const& dataType() const { return m_type; }
+
+       template <typename T>
+       void setAttribute(String const& name, T value) {
+          m_attributes.set(name, value);
+       }
+
+       template <typename T>
+       bool getAttribute(String const& name, T value) {
+          return m_attributes.get(name, value);
+       }
+
 
        /// Allocates a new Array<D,T> of Size and appends it to the list of
        /// known data.
@@ -63,7 +78,6 @@ class RawData {
 
 
    protected:
-       
        bool write(hid_t gid) const;
 
 	   /// Attempts to read the data contained in the gid into this object.  It
@@ -77,10 +91,12 @@ class RawData {
 
        bool read(hid_t gid, char const* path);
 
-       List<ArrayBase*> m_arrays;
-       String    m_label;
-       DataType  m_type;
-       // Attributes
+       String             m_label;
+       DataType           m_type;
+
+       List< ArrayBase*>  m_arrays;
+
+       Attributes  m_attributes;
 };
 
 } // end namespace
