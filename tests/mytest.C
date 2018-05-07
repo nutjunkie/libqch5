@@ -91,11 +91,10 @@ int main()
    RawData data("Ethanol", DataType::Molecule);
 
    data.setAttribute("T1", 50);
-   data.setAttribute("convergence", 23);
-   data.setAttribute("Happiness", "very");
+   data.setAttribute("convergence", 5);
+   data.setAttribute("theory", "b3lyp");
    data.setAttribute("pi", 3.1415);
-
-   //data.setAttribute("T1", 3);
+   data.setAttribute("T1", 3);
 
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
@@ -142,10 +141,8 @@ int main()
 
    DEBUG("\n======================================================\n");
 
-   //RawData data2;
    RawData data2("Ethanol/", DataType::Molecule);
    project.read("/Projects/Ethanol", data2);
-   return 0;
 
    project.write("/Projects2", data2);
 

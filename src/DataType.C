@@ -49,7 +49,7 @@ DataType::DataType(String const& s) : m_id(Base)
 
 DataType::DataType(unsigned const n) : m_id(Base)
 {
-   if (n >= 0 && n < Invalid) m_id = (Id)n;
+   if (n < Invalid) m_id = (Id)n;
 }
 
 

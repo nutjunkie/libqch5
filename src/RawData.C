@@ -63,7 +63,7 @@ bool RawData::write(hid_t gid) const
 
        //DEBUG("Writing " << k << " to file, ptr-> " << *array << " type: " << tid);
        ok = ok && write(wgid, k.c_str(), tid, rank, dims, buffer);
-       if (!ok)  DEBUG("!!! Write failed for " << k);
+       if (!ok)  DEBUG("WARN: Write failed for " << k);
 
        // This is how we could write attributes to specific arrays, if required:
        // const char* key("array_attr");
@@ -101,6 +101,12 @@ bool RawData::read(hid_t gid)
 
    m_attributes.clear();
    m_attributes.read(gid, m_label.c_str());
+   unsigned dataType(0);
+   ok = m_attributes.get("DataType", dataType);
+   DEBUG("DataType read as " << dataType);
+
+   m_attributes.dump();
+
 return true;
 
    hid_t wgid = H5Gopen(gid, m_label.c_str(), H5P_DEFAULT);

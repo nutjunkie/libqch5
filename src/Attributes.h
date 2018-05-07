@@ -83,7 +83,9 @@ class Attributes {
       // Sets the attributes to the given object ID 
       bool write(hid_t oid, char const* label) const;
       bool read(hid_t oid, char const* label);
+
       void clear();
+      void dump() const;
 
    protected:
       StringMap<int>      m_attributesInt;
