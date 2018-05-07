@@ -29,7 +29,8 @@ class RawData {
 
        ~RawData();
 
-       String const& label()   const { return m_label; }
+
+       String const& label() const { return m_label; }
        DataType const& dataType() const { return m_type; }
 
        template <typename T>
@@ -49,10 +50,10 @@ class RawData {
        Array<D, T>& createArray(typename Array<D, T>::Size const& size)
        {
           Array<D, T>* d(new Array<D,T>(size));
-          DEBUG("Allocated array " << d);
           m_arrays.push_back(d);
           return *d;
        }
+
 
        // Convenience functions for creating arrays of rank 1-3
        template <typename T = double>
@@ -78,6 +79,10 @@ class RawData {
 
 
    protected:
+
+       void setLabel(String const& label) { m_label = label; }
+       void setDataType(DataType const type) { m_type = type; }
+
        bool write(hid_t gid) const;
 
 	   /// Attempts to read the data contained in the gid into this object.  It
@@ -86,17 +91,18 @@ class RawData {
        bool read(hid_t gid);
 
    private:
+       // prohibit copying
+       RawData(RawData const&) { }
+
        bool write(hid_t fid, char const* path, hid_t tid, size_t rank, 
           hsize_t const* dimensions, void const* data) const;
 
        bool read(hid_t gid, char const* path);
 
-       String             m_label;
-       DataType           m_type;
-
+       String   m_label;
+       DataType m_type;
        List< ArrayBase*>  m_arrays;
-
-       Attributes  m_attributes;
+       Attributes m_attributes;
 };
 
 } // end namespace

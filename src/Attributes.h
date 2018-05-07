@@ -24,6 +24,10 @@ class Attributes {
          m_attributesInt[key] =  value;
       }
 
+      void set(String const& key, unsigned value) {
+         m_attributesUInt[key] =  value;
+      }
+
       void set(String const& key, double value) {
          m_attributesDouble[key] =  value;
       }
@@ -37,6 +41,17 @@ class Attributes {
       bool get(String const& key, int& value) const {
          StringMap<int>::const_iterator iter(m_attributesInt.find(key));
          if (iter != m_attributesInt.end()) {
+            value = iter->second;
+            return true;
+         } 
+         return false;
+      }
+
+      /// If found, sets value to the value of the attribute 
+      /// and returns true, otherwise, returns false.
+      bool get(String const& key, unsigned& value) const {
+         StringMap<unsigned>::const_iterator iter(m_attributesUInt.find(key));
+         if (iter != m_attributesUInt.end()) {
             value = iter->second;
             return true;
          } 
@@ -71,9 +86,10 @@ class Attributes {
       void clear();
 
    protected:
-      StringMap<int>    m_attributesInt;
-      StringMap<double> m_attributesDouble;
-      StringMap<String> m_attributesString;
+      StringMap<int>      m_attributesInt;
+      StringMap<unsigned> m_attributesUInt;
+      StringMap<double>   m_attributesDouble;
+      StringMap<String>   m_attributesString;
 };
 
 } // end namespace

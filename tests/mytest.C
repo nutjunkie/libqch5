@@ -94,7 +94,8 @@ int main()
    data.setAttribute("convergence", 23);
    data.setAttribute("Happiness", "very");
    data.setAttribute("pi", 3.1415);
-   data.setAttribute("T1", 3);
+
+   //data.setAttribute("T1", 3);
 
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
@@ -115,7 +116,6 @@ int main()
    std::cout << "test print " << d1(idx1) << " length " << d1.length() << std::endl;
    std::cout << "test print " << d2(idx2) << " length " << d2.length() << std::endl;
    std::cout << "test print " << d3(idx3) << " length " << d3.length() << std::endl;
-   
 
 
    Schema schema;
@@ -140,8 +140,13 @@ int main()
    DEBUG("Check this: " << project.exists("/Projects", data));
    DEBUG("Check this: " << project.isValid("/Projects", data));
 
-   RawData data2;
+   DEBUG("\n======================================================\n");
+
+   //RawData data2;
+   RawData data2("Ethanol/", DataType::Molecule);
    project.read("/Projects/Ethanol", data2);
+   return 0;
+
    project.write("/Projects2", data2);
 
    schema.isValid("/Projects", data);

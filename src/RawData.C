@@ -28,25 +28,22 @@ RawData::~RawData()
 
 bool RawData::write(hid_t gid) const
 {
-   DEBUG("Writing " << m_arrays.size() << " arrays to " << gid);
-
-   bool ok(true);
-
-   DEBUG("\n");
-   DEBUG("Iterating over gid");
-   listGroup(gid);
-   DEBUG("\n");
-
+   DEBUG("Writing RawData '" << m_label << "' of DataType '" << m_type << "' to " 
+      << gid << " with " << m_arrays.size() << " arrays") ;
 
    hid_t wgid(openGroup(gid, m_label.c_str()));
    if (wgid < 0) return false;
 
-   // Write attributes
-   m_attributes.write(gid, m_label.c_str());
+   // DataType
+   unsigned type(m_type.toUInt());
+   H5LTset_attribute_uint(gid, m_label.c_str(), "DataType", &type, 1); 
 
+   // Attributes
+   m_attributes.write(gid, m_label.c_str());
 
    // Write array data
    int  index(0);
+   bool ok(true);
    List<ArrayBase*>::const_iterator array;
 
    for (array = m_arrays.begin(); array != m_arrays.end(); ++array, ++index) {
@@ -64,7 +61,7 @@ bool RawData::write(hid_t gid) const
        // The array data are named with an index
        String k(std::to_string(index));
 
-       DEBUG("Writing " << k << " to file, ptr-> " << *array << " type: " << tid);
+       //DEBUG("Writing " << k << " to file, ptr-> " << *array << " type: " << tid);
        ok = ok && write(wgid, k.c_str(), tid, rank, dims, buffer);
        if (!ok)  DEBUG("!!! Write failed for " << k);
 
@@ -99,10 +96,9 @@ bool RawData::write(hid_t gid, char const* path, hid_t tid, size_t rank,
 
 bool RawData::read(hid_t gid)
 {
-   DEBUG("Reading data from " << gid);
+   DEBUG("Reading data for " << m_label << " (" << gid << ")");
    bool ok(true);
 
-   DEBUG("Reading attributes from " << gid << " " << m_label);
    m_attributes.clear();
    m_attributes.read(gid, m_label.c_str());
 return true;

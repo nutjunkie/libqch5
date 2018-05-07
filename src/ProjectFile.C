@@ -115,30 +115,46 @@ void ProjectFile::initGroupHierarchy()
 
 void ProjectFile::write(char const* path, RawData const& data)
 {
-   // Check if the data fits into the current Schema
-
-   hid_t gid = openGroup(m_fileId, path);
-   if (gid < 0) {
-      DEBUG("!!! Failed to open group !!!" << path);
-      return;
+   if (isValid(path, data)) {
+      hid_t gid = openGroup(m_fileId, path);
+      data.write(gid);
+      H5Gclose(gid);
+   }else {
+      DEBUG("WARN: Attempt to write invalid data for current schema.");
+      DEBUG(data.dataType().toString() << " written to " << path);
    }
-
-   data.write(gid);
-   H5Gclose(gid);
 }
 
 
 void ProjectFile::read(char const* path, RawData& data)
 {
+   // TODO: Check if the data fits into the current Schema
+   DataType const& type(data.dataType());
+   if (type == DataType::Base) {
+      // new target ripe for filling.
+      DEBUG("Reading into uninitialised data object");
+   }else if (isValid(path, data)) {
+      // existing target good to go
+      DEBUG("Reading into existing data object of type " << data.dataType().toString());
+   }else {
+      // throw an error
+      DEBUG("Incompatible data types, what are you doing?");
+      return;
+   }
 
-   // Check if the data fits into the current Schema
-   hid_t gid = openGroup(m_fileId, path);
+   hid_t gid = H5Gopen(m_fileId, path, H5P_DEFAULT);
    if (gid < 0) {
       DEBUG("!!! Failed to open group !!!" << path);
       return;
    }
 
+   // Grab the name from the /file/path/name passed in
+   String label(path);
+   size_t n(label.find_last_of('/'));
+
+   data.setLabel(label.substr(n+1));
    data.read(gid);
+
    H5Gclose(gid);
 }
 
