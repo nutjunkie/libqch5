@@ -34,7 +34,10 @@ class ProjectFile {
 
       ~ProjectFile();
 
-	  void open(char const* filePath, IOStat const = Old);
+	  void open(char const* filePath, IOStat const = Old, Schema const& = Schema());
+
+      /// Closes the attached file, updating m_status.
+      void close();
 
       Status status() const { return m_status; }
       String const& error() const { return m_error; }
@@ -53,9 +56,6 @@ class ProjectFile {
       bool isValid(char const* path, RawData const& data) const;
 
    private:
-      /// Closes the attached file, updating m_status.
-      void close();
-
 	  /// Attempts to read an existing Schema from the file, returning false
 	  /// if none can be found.
       bool readSchema(Schema&);

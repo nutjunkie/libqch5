@@ -22,21 +22,7 @@ ProjectFile::ProjectFile(char const* path, IOStat const ioStat, Schema const& sc
 {
    // Turn off automatic printing of error messages
    H5Eset_auto(0,0,0);
-
-   open(path, ioStat);
-
-   if (m_status == Open) {
-       DEBUG("Opened project file: " << path);
-       m_status = Open;
-       if (ioStat == New || ioStat == Overwrite) {
-          if (!writeSchema(m_schema)) DEBUG("ERROR: " << m_error);
-       }
-
-       Schema sch;       // !!!!!!!!!!!!!!!!!!
-       readSchema(sch) ; // !!!!!!!!!!!!!!!!!!
-    }else {
-       DEBUG("Failed to open project file " << path);
-    }
+   open(path, ioStat, schema);
 }
 
 
@@ -46,8 +32,13 @@ ProjectFile::~ProjectFile()
 }
 
 
-void ProjectFile::open(char const* path, IOStat const ioStat)
+void ProjectFile::open(char const* path, IOStat const ioStat, Schema const& schema)
 {
+   if (m_status == Open) {
+      DEBUG("ERROR: Attempt to open existing ProjectFile" << path);
+      return;
+   }
+
    switch (ioStat) {
 
       case New:
@@ -67,15 +58,34 @@ void ProjectFile::open(char const* path, IOStat const ioStat)
          break;
    }
 
-   if (m_fileId > 0) m_status = Open;
+   if (m_fileId > 0) {
+
+      m_status = Open;
+      DEBUG("Opened project file: " << path);
+      m_status = Open;
+      if (ioStat == New || ioStat == Overwrite) {
+         if (!writeSchema(m_schema)) DEBUG("ERROR: " << m_error);
+      }else if (ioStat == Old) {
+         readSchema(m_schema); 
+         // make sure Schema match, if specified.
+         if ((schema != Schema()) && (schema != m_schema)) {
+            DEBUG("WARN: Mismatching schema specifed for ProjectFile:" << path);
+            m_schema.print();
+            schema.print();
+         }
+      }
+
+   }else {
+      DEBUG("Failed to open project file " << path);
+   }
 }
 
 
 void ProjectFile::close()
 {
+   m_status = Closed;
    if (m_fileId > 0) H5Fclose(m_fileId);
    m_fileId = 0;
-   m_status = Closed;
 }
 
 
@@ -85,9 +95,10 @@ void ProjectFile::write(char const* path, RawData const& data)
       hid_t gid = openGroup(m_fileId, path);
       data.write(gid);
       H5Gclose(gid);
-   }else {
-      DEBUG("WARN: Attempt to write invalid data for current schema.");
       DEBUG(data.dataType().toString() << " written to " << path);
+   }else {
+      DEBUG("WARN: Cannot write " << data.dataType().toString() << " to " << path
+          << " with current schema");
    }
 }
 
@@ -173,34 +184,28 @@ bool ProjectFile::addGroup(char const* path)
 
 bool ProjectFile::readSchema(Schema& schema)
 {
-   hsize_t dims[6];
+   if (!H5LTfind_attribute(m_fileId, "Schema") ) return false;
+
+   // Get length of the Schema string for buffer allocation
+   hsize_t dims;
    H5T_class_t type;
-   size_t size[6];
-   H5LTget_attribute_info( m_fileId, "/", "Schema",  dims, &type, size );
-DEBUG("H5LT info " << size[0]);
+   size_t length;
+   H5LTget_attribute_info(m_fileId, "/", "Schema",  &dims, &type, &length);
 
-//   hsize_t size(stringAttributeSize(m_fileId, "Schema"));
-/*
-   hid_t aid = H5Aopen_name(m_fileId, "Schema");
-   if (aid <= 0) return false;
+   char* buffer(new char[length+1]);
 
-   hid_t sid = H5Aget_space(aid);
-   if (sid <= 0) return false;
+   herr_t status =  H5LTget_attribute_string(m_fileId, "/", "Schema", buffer);
 
+   bool ok(status == 0);
+   if (ok) {
+      ok = schema.deserialize(buffer);
+      //schema.print();
+   }else {
+      m_error  = "Failed to read Schema";
+   }
 
-   char* buffer;
-   herr_t status(H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str()));
-
-   bool ok(true);
-   String s(m_schema.serialize());
-   DEBUG("Deserializing Schema:\n"<<  s);
-   m_schema.deserialize(s);
-
-//   readSchema();
-   herr_t ret = H5Aread(aid, tid, &value);
-*/
-
-   return true;
+   delete [] buffer;
+   return ok;
 }
 
 
@@ -210,7 +215,7 @@ bool ProjectFile::writeSchema(Schema const& schema)
    herr_t status(H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str()));
 
    if (status != 0) {
-      m_error  = "Failed to open group for Schema";
+      m_error  = "Failed to write Schema";
       m_status = Error;
    }
 

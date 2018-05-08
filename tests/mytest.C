@@ -40,7 +40,7 @@ int main()
    DEBUG("\n === RawData ===");
    // The RawData class has convenience functions that create array objects
    // and manage their data.  These are only available for D1-3
-   RawData data("Ethanol", DataType::Molecule);
+   RawData data("Ethanol", DataType::Base);
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
    Array<3>& d3(data.createArray(6,5,4));
@@ -81,6 +81,7 @@ int main()
       Schema::Node& thermochemical(root.appendChild(DataType::Property));
       Schema::Node& zpve(thermochemical.appendChild(DataType::Property));
 
+
    schema.print();
 
    // These might appear to be off-by-one isValid -> canAppend?
@@ -91,17 +92,26 @@ int main()
 
    
    DEBUG("\n === ProjectFile ===");
-   // ProjectFiles are a file with a given Schema
-   libqch5::ProjectFile project("myproject.h5", ProjectFile::New, schema);
+   // New ProjectFiles can be created with a given schema, note that this 
+   // cannot be later changed.
+   ProjectFile project("myproject.h5", ProjectFile::New, schema);
+   project.close();
 
-   project.write("/Projects", data);
+   // Existing ProjectFiles can be opened and, if specified, a schema
+   // check can be made to ensure consistent schema.
+   // Schema::Node& units(zpve.appendChild(DataType::Property));
+   project.open("myproject.h5", ProjectFile::Old, schema);
+
+
+   project.write("/", data);
+   project.write("/Junk", data);
+
+
    DEBUG("\n======================================================\n");
-
    DEBUG("Check this: " << project.pathExists("/Projects"));
    DEBUG("Check this: " << project.pathExists("/Projects/Untitled"));
    DEBUG("Check this: " << project.pathExists("/Projects/Ethanol/0"));
    DEBUG("Check this: " << project.isValid("/Projects", data));
-
    DEBUG("\n======================================================\n");
 
    RawData data2("Ethanol/", DataType::Molecule);
@@ -112,12 +122,5 @@ int main()
    schema.isValid("/Projects", data.dataType());
    schema.isValid("/Projects/Molecules/", data.dataType());
 
-/*
-   unsigned depth(schema.depth(DataType::Molecule));
-   DEBUG("Ply depth " << depth);
-   DEBUG("");
-   DEBUG("");
-*/
-   
    return 0;
 }

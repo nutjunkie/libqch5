@@ -119,7 +119,7 @@ bool Schema::deserialize(String const& s)
             parent = &parent->parent();
          }
 
-      }else {
+      }else if (!token.empty()) {
          if (parent == 0) {
             m_tree.insert(DataType(token));
             parent = &m_tree.root();

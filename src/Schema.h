@@ -44,6 +44,7 @@ class Schema {
       void print() const;
 
       bool operator==(Schema const& rhs) const;
+      bool operator!=(Schema const& rhs) const { return !(*this == rhs); }
 
    private:
       // Utility function that determines the depth of the path

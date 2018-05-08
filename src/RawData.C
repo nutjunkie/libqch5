@@ -28,8 +28,8 @@ RawData::~RawData()
 
 bool RawData::write(hid_t gid) const
 {
-   DEBUG("Writing RawData '" << m_label << "' of DataType '" << m_type << "' to " 
-      << gid << " with " << m_arrays.size() << " arrays") ;
+   DEBUG("Writing RawData '" << m_label << "' of DataType '" << m_type 
+      << " with " << m_arrays.size() << " arrays") ;
 
    hid_t wgid(openGroup(gid, m_label.c_str()));
    if (wgid < 0) return false;
