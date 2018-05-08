@@ -10,35 +10,33 @@
 #include "ProjectFile.h"
 #include "H5Utils.h"
 #include "RawData.h"
-
 #include "hdf5_hl.h"
 
 #include "Debug.h"
 
+
 namespace libqch5 {
 
-ProjectFile::ProjectFile(char const* path, Schema const& schema) : m_fileId(0), 
-   m_status(Closed), m_schema(schema)
+ProjectFile::ProjectFile(char const* path, IOStat const ioStat, Schema const& schema) :
+   m_fileId(0), m_status(Closed), m_schema(schema)
 {
    // Turn off automatic printing of error messages
    H5Eset_auto(0,0,0);
-//H5G_loc_find
-DEBUG("WARN: Don't truncate the file when opening");
-   init(path);
 
-   if (m_status != Open) {
-      DEBUG("Failed to open project archive " << path);
-   }else {
-      DEBUG("Opened " << path);
-   }
-}
+   open(path, ioStat);
 
+   if (m_status == Open) {
+       DEBUG("Opened project file: " << path);
+       m_status = Open;
+       if (ioStat == New || ioStat == Overwrite) {
+          if (!writeSchema(m_schema)) DEBUG("ERROR: " << m_error);
+       }
 
-ProjectFile::ProjectFile(char const* path) : m_fileId(0), m_status(Closed)
-{
-   // Turn off automatic printing of error messages
-   H5Eset_auto(0,0,0);
-   open(path);
+       Schema sch;       // !!!!!!!!!!!!!!!!!!
+       readSchema(sch) ; // !!!!!!!!!!!!!!!!!!
+    }else {
+       DEBUG("Failed to open project file " << path);
+    }
 }
 
 
@@ -48,68 +46,36 @@ ProjectFile::~ProjectFile()
 }
 
 
-void ProjectFile::open(char const* path)
+void ProjectFile::open(char const* path, IOStat const ioStat)
 {
-   m_fileId = H5Fopen(path, H5F_ACC_RDWR, H5P_DEFAULT);
+   switch (ioStat) {
 
-   if (m_fileId > 0) {
-      DEBUG("Opening exisiting file " << path);
-      m_status = Open;
-   }else {
-      DEBUG("Failed to open project archive " << path);
+      case New:
+         DEBUG("Attempt to open new project archive: " << path);
+         m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+         break;
+
+      case Old:
+         DEBUG("Attempt to open existing project archive: " << path);
+         DEBUG("WARN: Need to check if file exists before opening");
+         m_fileId = H5Fopen(path, H5F_ACC_RDWR, H5P_DEFAULT);
+         break;
+
+      case Overwrite:
+         DEBUG("Opening project archive: " << path);
+         m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+         break;
    }
-}
 
-
-void ProjectFile::init(char const* path)
-{
-   m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-   
-   if (m_fileId > 0) {
-      DEBUG("Initializing new file " << path);
-      initGroupHierarchy();
-      m_status = Open;
-   }
+   if (m_fileId > 0) m_status = Open;
 }
 
 
 void ProjectFile::close()
 {
    if (m_fileId > 0) H5Fclose(m_fileId);
-
    m_fileId = 0;
    m_status = Closed;
-}
-
-
-void ProjectFile::initGroupHierarchy()
-{
-   hid_t  group;
-   herr_t status;
-
-   group = H5Gcreate(m_fileId, "/Projects", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-   if (group < 0) {
-      m_error  = "Failed to create Projects group";
-      m_status = Error;
-   }
-
-   group = H5Gcreate(m_fileId, "/External", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-   if (group < 0) {
-      m_error  = "Failed to create Exterals group";
-      m_status = Error;
-   }
-
-   group = H5Gcreate(m_fileId, "/Consolidated", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-   if (group < 0) {
-      m_error  = "Failed to create Consolidated Data group";
-      m_status = Error;
-   }
-
-   group = H5Gcreate(m_fileId, "/Schema", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-   if (group < 0) {
-      m_error  = "Failed to create Schema group";
-      m_status = Error;
-   }
 }
 
 
@@ -159,15 +125,14 @@ void ProjectFile::read(char const* path, RawData& data)
 }
 
 
-bool ProjectFile::exists(char const* path) const
+bool ProjectFile::pathExists(char const* path) const
 {
    hbool_t checkObjectValid(false);
-   htri_t valid = H5LTpath_valid( m_fileId, path, checkObjectValid);
-   //DEBUG("Path check returned: " << valid);
-   return valid;
+   return H5LTpath_valid(m_fileId, path, checkObjectValid);
 }
 
 
+/*
 bool ProjectFile::exists(char const* path, RawData const& data) const
 {
    // check path exists
@@ -175,30 +140,81 @@ bool ProjectFile::exists(char const* path, RawData const& data) const
    p += "/" + data.label();
    hbool_t checkObjectValid(false);
    htri_t valid = H5LTpath_valid( m_fileId, p.c_str(), checkObjectValid);
-   //DEBUG("Path check returned: " << valid);
    return valid;
 }
+*/
 
 
 bool ProjectFile::isValid(char const* path, RawData const& data) const
 {
-   bool valid(exists(path));
-   valid = valid && m_schema.isValid(path, data);
+   bool valid(pathExists(path));
+   valid = valid && m_schema.isValid(path, data.dataType());
    return valid;
+}
+
+
+
+bool ProjectFile::addGroup(char const* path)
+{
+   bool ok(true);
+
+   if (!pathExists(path)) {
+      hid_t group = H5Gcreate(m_fileId, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      if (group < 0) {
+         m_error  = "Failed to add group ProjectFile: ";
+         m_error += path;
+         ok = false;
+      }
+   }
+
+   return ok;
 }
 
 
 bool ProjectFile::readSchema(Schema& schema)
 {
-   DEBUG("ProjectFile::readSchema NYI!!!");
+   hsize_t dims[6];
+   H5T_class_t type;
+   size_t size[6];
+   H5LTget_attribute_info( m_fileId, "/", "Schema",  dims, &type, size );
+DEBUG("H5LT info " << size[0]);
+
+//   hsize_t size(stringAttributeSize(m_fileId, "Schema"));
+/*
+   hid_t aid = H5Aopen_name(m_fileId, "Schema");
+   if (aid <= 0) return false;
+
+   hid_t sid = H5Aget_space(aid);
+   if (sid <= 0) return false;
+
+
+   char* buffer;
+   herr_t status(H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str()));
+
+   bool ok(true);
+   String s(m_schema.serialize());
+   DEBUG("Deserializing Schema:\n"<<  s);
+   m_schema.deserialize(s);
+
+//   readSchema();
+   herr_t ret = H5Aread(aid, tid, &value);
+*/
+
    return true;
 }
 
 
 bool ProjectFile::writeSchema(Schema const& schema)
 {
-   DEBUG("ProjectFile::writeSchema NYI!!!");
-   return true;
+   String s(schema.serialize());
+   herr_t status(H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str()));
+
+   if (status != 0) {
+      m_error  = "Failed to open group for Schema";
+      m_status = Error;
+   }
+
+   return status == 0;;
 }
 
 } // end namespace

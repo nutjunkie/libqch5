@@ -20,6 +20,31 @@ hid_t openGroup(hid_t parent, char const* group)
 }
 
 
+hsize_t stringAttributeSize(hid_t oid, char const* attributeName)
+{
+   hid_t aid = H5Aopen_name(oid, attributeName);
+   if (aid <= 0) return 0;
+
+   hid_t atype = H5Aget_type(aid);
+   std::cout << "Attribute type:  " << atype << std::endl;
+
+   hid_t sid = H5Aget_space(aid);
+   std::cout << "Attribute space: " << sid << std::endl;
+   if (sid <= 0) return 0;
+
+   hsize_t dims[1];
+   hsize_t maxdims;
+
+   H5Sget_simple_extent_dims(sid, dims, NULL);
+
+   std::cout << "Dimension of attribute " << attributeName << " = " << *dims << std::endl;
+
+   hsize_t size(0);
+   return size;
+}
+
+
+
 /// Define operator data structure type for H5Literate callback.
 /// During recursive iteration, these structures will form a
 /// linked list that can be searched for duplicate groups,

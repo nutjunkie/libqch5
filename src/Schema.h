@@ -16,11 +16,7 @@
 
 namespace libqch5 {
 
-class RawData;
-
-/// Schemas determine the heirarchy of the data storage for a given ProjctFile.
-/// We allow strings on the assumption that any unrecognised ContextData type can
-/// be handled generically.
+/// Schemas determine the heirarchy of the data storage for a given ProjectFile.
 class Schema {
 
    public:
@@ -28,22 +24,36 @@ class Schema {
       typedef st_tree::tree<DataType>::node_type Node;
 
    public:
-      Schema(DataType const root = DataType::ProjectGroup);
+      Schema(DataType const root = DataType::Base);
 
       Node& root() { return m_tree.root(); };
-      Node& appendChild(String const& data);
+
       Node& appendChild(DataType const& id);
 
-      bool isValid(char const* path, RawData const&) const;
+      // We allow strings on the assumption that any unrecognised 
+      // ContextData type will be handled generically.
+      Node& appendChild(String const& data);
 
-      unsigned depth(DataType const& type) const;
-      unsigned depth(char const* path) const;
+      // Performs a check to see that the DataType can be written
+      // to the given path.
+      bool isValid(char const* path, DataType const&) const;
       
+      String serialize() const;
+      bool deserialize(String const&);
+
       void print() const;
 
       bool operator==(Schema const& rhs) const;
 
    private:
+      // Utility function that determines the depth of the path
+      // (essentially the number of '/' characters in the path.
+      int depth(char const* path) const;
+
+      // Utility function that determines the depth of the DataType
+      // returns -1 is the DataType does not appear in the Schema.
+      int depth(DataType const&) const;
+
       Tree m_tree;
 };
 

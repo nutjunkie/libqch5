@@ -23,39 +23,36 @@ class ProjectFile {
 
    public:
       enum Status { Closed, Open, Error };
+      enum IOStat { New, Old, Overwrite };
       
-      /// Opens an exisint Project file.  The Shema is loaded from the file
-      ProjectFile(char const* filePath);
-
-	  /// Opens a new Project file and sets the given Schema.  If the file
-	  /// exists a check is made to ensure the Schema match.
-	  ProjectFile(char const* filePath, Schema const&);
+      // Initializes a new ProjectFile with the given file path.  For files with
+      // IOMode set to New or Overwrite, the Schema should be passed in to the
+      // constructor.  For exisiting (Old) files the Schema is read in from the 
+      // file.  If a Schema is also specified, a  check is made to ensure the
+      // Schemas match.
+	  ProjectFile(char const* filePath, IOStat const = Old, Schema const& = Schema());
 
       ~ProjectFile();
 
-      Status status() const { return m_status; }
+	  void open(char const* filePath, IOStat const = Old);
 
+      Status status() const { return m_status; }
       String const& error() const { return m_error; }
 
+      // Writes the given data object as a child of the path
       void write(char const* path, RawData const& data);
+
+      // Reads the given data object as a child of the path
       void read( char const* path, RawData& data);
 
-      bool exists(char const* path) const;
-      bool exists(char const* path, RawData const& data) const;
+      // Checks if the path currently exists in the file
+      bool pathExists(char const* path) const;
+
+      bool addGroup(char const* path);
 
       bool isValid(char const* path, RawData const& data) const;
 
    private:
-      /// Sets-up the appropriate hierarchy for a new project file
-      void initGroupHierarchy();
-
-	  /// Initializes a new project file.
-      void init(char const* filePath);
-
-	  /// Attempts to connect to an existing Project file, updating m_status on
-	  /// success.
-      void open(char const* filePath);
-
       /// Closes the attached file, updating m_status.
       void close();
 
