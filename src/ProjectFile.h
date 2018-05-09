@@ -53,7 +53,9 @@ class ProjectFile {
 
 
    private:
-      IOStat ioStat() const { return m_ioStat; }
+      bool pathCheck(char const* path) const;
+      DataType typeCheck(char const* path) const;
+
 
 	  void open(char const* filePath, IOMode const = Old, Schema const& = Schema());
 

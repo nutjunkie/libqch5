@@ -11,6 +11,7 @@
 #include "H5Utils.h"
 #include "RawData.h"
 #include "hdf5_hl.h"
+#include "StringUtils.h"
 
 #include "Debug.h"
 
@@ -91,6 +92,7 @@ void ProjectFile::close()
 
 void ProjectFile::write(char const* path, RawData const& data)
 {
+   pathCheck(path);
    if (isValid(path, data)) {
       hid_t gid = openGroup(m_fileId, path);
       data.write(gid);
@@ -100,6 +102,26 @@ void ProjectFile::write(char const* path, RawData const& data)
       DEBUG("WARN: Cannot write " << data.dataType().toString() << " to " << path
           << " with current schema");
    }
+}
+
+
+
+bool ProjectFile::pathCheck(char const* path) const
+{
+   if (!pathExists(path)) return false;
+
+   String s(path);
+   std::vector<String> tokens = split(String(path),'/'); 
+
+   String p("/");
+
+   List<String>::iterator iter;
+   for (iter = tokens.begin(); iter != tokens.end(); ++iter) {
+       
+       std::cout << ":/:" << *iter << std::endl;
+   }
+   
+   return true;
 }
 
 
@@ -197,6 +219,35 @@ bool ProjectFile::addGroup(char const* path)
    }
 
    return ok;
+}
+
+
+DataType ProjectFile::typeCheck(char const* path) const
+{
+   DataType invalid(DataType::Invalid);
+
+   if (!pathExists(path)) {
+      DEBUG("ProjectFile::typeCheck: Non-existent path " << path);
+      return invalid;
+   }
+   
+   hid_t gid = H5Gopen(m_fileId, path, H5P_DEFAULT);
+   if (gid <= 0) {
+      DEBUG("ProjectFile::typeCheck: Failed to open path " << path);
+      return invalid;
+   }
+
+   unsigned value;
+   hid_t aid = H5Aopen_name(gid, "DataType");
+   herr_t status = H5Aread(aid, H5T_NATIVE_UINT, &value);
+   if (!(status == 0)) {
+      DEBUG("ProjectFile::typeCheck: Failed to determine DataType for path " << path);
+      H5Gclose(gid);
+      return invalid;
+   }
+
+   H5Gclose(gid);
+   return DataType(value);
 }
 
 

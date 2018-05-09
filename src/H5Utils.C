@@ -20,6 +20,7 @@ hid_t openGroup(hid_t parent, char const* group)
 }
 
 
+// This only works if a data space has actually been allocated to the attribute.
 hsize_t stringAttributeSize(hid_t oid, char const* attributeName)
 {
    hid_t aid = H5Aopen_name(oid, attributeName);
