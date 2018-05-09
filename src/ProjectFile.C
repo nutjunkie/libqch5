@@ -17,12 +17,12 @@
 
 namespace libqch5 {
 
-ProjectFile::ProjectFile(char const* path, IOStat const ioStat, Schema const& schema) :
-   m_fileId(0), m_status(Closed), m_schema(schema)
+ProjectFile::ProjectFile(char const* path, IOMode const ioMode, Schema const& schema) :
+   m_fileId(0), m_ioStat(Closed), m_schema(schema)
 {
    // Turn off automatic printing of error messages
    H5Eset_auto(0,0,0);
-   open(path, ioStat, schema);
+   open(path, ioMode, schema);
 }
 
 
@@ -32,14 +32,14 @@ ProjectFile::~ProjectFile()
 }
 
 
-void ProjectFile::open(char const* path, IOStat const ioStat, Schema const& schema)
+void ProjectFile::open(char const* path, IOMode const ioMode, Schema const& schema)
 {
-   if (m_status == Open) {
+   if (m_ioStat == Open) {
       DEBUG("ERROR: Attempt to open existing ProjectFile" << path);
       return;
    }
 
-   switch (ioStat) {
+   switch (ioMode) {
 
       case New:
          DEBUG("Attempt to open new project archive: " << path);
@@ -60,12 +60,12 @@ void ProjectFile::open(char const* path, IOStat const ioStat, Schema const& sche
 
    if (m_fileId > 0) {
 
-      m_status = Open;
+      m_ioStat = Open;
       DEBUG("Opened project file: " << path);
-      m_status = Open;
-      if (ioStat == New || ioStat == Overwrite) {
+      m_ioStat = Open;
+      if (ioMode == New || ioMode == Overwrite) {
          if (!writeSchema(m_schema)) DEBUG("ERROR: " << m_error);
-      }else if (ioStat == Old) {
+      }else if (ioMode == Old) {
          readSchema(m_schema); 
          // make sure Schema match, if specified.
          if ((schema != Schema()) && (schema != m_schema)) {
@@ -83,7 +83,7 @@ void ProjectFile::open(char const* path, IOStat const ioStat, Schema const& sche
 
 void ProjectFile::close()
 {
-   m_status = Closed;
+   m_ioStat = Closed;
    if (m_fileId > 0) H5Fclose(m_fileId);
    m_fileId = 0;
 }
@@ -103,36 +103,52 @@ void ProjectFile::write(char const* path, RawData const& data)
 }
 
 
-void ProjectFile::read(char const* path, RawData& data)
+bool ProjectFile::read(char const* path, RawData& data)
 {
-   // TODO: Check if the data fits into the current Schema
-   DataType const& type(data.dataType());
-   if (type == DataType::Base) {
-      // new target ripe for filling.
-      DEBUG("Reading into uninitialised data object");
-   }else if (isValid(path, data)) {
-      // existing target good to go
-      DEBUG("Reading into existing data object of type " << data.dataType().toString());
-   }else {
-      // throw an error
-      DEBUG("Incompatible data types, what are you doing?");
-      return;
+   // We read without doing any Schmea check as long as the RawData DataType
+   // is consistent with the DataType of the path in the file.
+   if (!pathExists(path)) {
+      m_error = "ProjectFile::read: Non-existent path " + String(path);
+      return false;
    }
-
+   
    hid_t gid = H5Gopen(m_fileId, path, H5P_DEFAULT);
-   if (gid < 0) {
-      DEBUG("!!! Failed to open group !!!" << path);
-      return;
+   if (gid <= 0) {
+      m_error = "ProjectFile::read: Failed to open path " + String(path);
+      return false;
    }
 
-   // Grab the name from the /file/path/name passed in
-   String label(path);
-   size_t n(label.find_last_of('/'));
+   // Determine the DataType of the file object
+   unsigned value;
+   hid_t aid = H5Aopen_name(gid, "DataType");
+   herr_t status = H5Aread(aid, H5T_NATIVE_UINT, &value);
+   if (!(status == 0)) {
+      m_error = "ProjectFile::read: Failed to determine DataType for path " + String(path);
+      H5Gclose(gid);
+      return false;
+   }
 
+   DataType type(value);
+   if (type != data.dataType()) {
+      m_error = "ProjectFile::read: Incompatible data types - " + type.toString() + 
+         " and " + data.dataType().toString();
+      H5Gclose(gid);
+      return false;
+   }
+
+   // Grab the object name from the /file/path/name passed in
+   String label(path);
+   if (label.back() == '/') label.pop_back();  // strip any trailing '/'
+   size_t n(label.find_last_of('/'));
    data.setLabel(label.substr(n+1));
-   data.read(gid);
+
+   bool ok(data.read(gid));
+
+   if (!ok) m_error = "ProjectFile::read: Data read failed for path " + String(path);
+   if (ok) DEBUG("ProjectFile::read: " << type.toString() + " data read from " <<path);
 
    H5Gclose(gid);
+   return ok;
 }
 
 
@@ -159,7 +175,9 @@ bool ProjectFile::exists(char const* path, RawData const& data) const
 bool ProjectFile::isValid(char const* path, RawData const& data) const
 {
    bool valid(pathExists(path));
-   valid = valid && m_schema.isValid(path, data.dataType());
+   
+   //valid = valid && m_schema.type(path) == data.dataType();
+   valid = valid && m_schema.isValid(path,  data.dataType());
    return valid;
 }
 
@@ -194,9 +212,9 @@ bool ProjectFile::readSchema(Schema& schema)
 
    char* buffer(new char[length+1]);
 
-   herr_t status =  H5LTget_attribute_string(m_fileId, "/", "Schema", buffer);
+   herr_t ioStat =  H5LTget_attribute_string(m_fileId, "/", "Schema", buffer);
 
-   bool ok(status == 0);
+   bool ok(ioStat == 0);
    if (ok) {
       ok = schema.deserialize(buffer);
       //schema.print();
@@ -212,14 +230,14 @@ bool ProjectFile::readSchema(Schema& schema)
 bool ProjectFile::writeSchema(Schema const& schema)
 {
    String s(schema.serialize());
-   herr_t status(H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str()));
+   herr_t ioStat(H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str()));
 
-   if (status != 0) {
+   if (ioStat != 0) {
       m_error  = "Failed to write Schema";
-      m_status = Error;
+      m_ioStat = Error;
    }
 
-   return status == 0;;
+   return ioStat == 0;;
 }
 
 } // end namespace

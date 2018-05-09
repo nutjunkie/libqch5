@@ -95,12 +95,11 @@ int main()
    // New ProjectFiles can be created with a given schema, note that this 
    // cannot be later changed.
    ProjectFile project("myproject.h5", ProjectFile::New, schema);
-   project.close();
 
    // Existing ProjectFiles can be opened and, if specified, a schema
    // check can be made to ensure consistent schema.
    // Schema::Node& units(zpve.appendChild(DataType::Property));
-   project.open("myproject.h5", ProjectFile::Old, schema);
+   ProjectFile project2("old_project.h5", ProjectFile::Old, schema);
 
 
    project.write("/", data);
@@ -114,8 +113,12 @@ int main()
    DEBUG("Check this: " << project.isValid("/Projects", data));
    DEBUG("\n======================================================\n");
 
-   RawData data2("Ethanol/", DataType::Molecule);
-   project.read("/Projects/Ethanol", data2);
+   RawData data2("Ethanol/", DataType::Base);
+   DEBUG("reading data into data2");
+
+   if (!project.read("/Ethanol", data2)) {
+      DEBUG("ERROR: " << project.error());
+   }
 
    project.write("/Projects2", data2);
 

@@ -34,14 +34,18 @@ class Schema {
       // ContextData type will be handled generically.
       Node& appendChild(String const& data);
 
-      // Performs a check to see that the DataType can be written
-      // to the given path.
-      bool isValid(char const* path, DataType const&) const;
+      // Note that this will return the first DataType encountered and
+      // does not handle the case where a given DataType appears more
+      // than onece in the Schema.
+      DataType type(char const* path) const;
       
       String serialize() const;
       bool deserialize(String const&);
 
       void print() const;
+
+// deprecate
+bool isValid(char const* path, DataType const&) const;
 
       bool operator==(Schema const& rhs) const;
       bool operator!=(Schema const& rhs) const { return !(*this == rhs); }
