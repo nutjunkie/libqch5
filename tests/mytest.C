@@ -92,7 +92,7 @@ int main()
    DEBUG("\n === ProjectFile ===");
    // New ProjectFiles can be created with a given schema.
    // Note that this cannot be later changed.
-   ProjectFile project("myproject.h5", ProjectFile::New, schema);
+   ProjectFile project("myproject.h5", ProjectFile::Overwrite, schema);
 
    if (!project.isOpen()) {
       DEBUG("Problem opening ProjectFile " << project.error());
@@ -111,7 +111,7 @@ int main()
    }
    DEBUG("\n======================================================\n");
 
-   project.addGroup("/Isomerization");
+   project.addGroup("/Isomerization", DataType::Project);
    project.write("/Isomerization", water);
    project.write("/Isomerization", acetone);
 

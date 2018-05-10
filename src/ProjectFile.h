@@ -40,7 +40,9 @@ class ProjectFile {
 
 
       // Writes the given data object as a child of the path
-      void write(char const* path, RawData const& data);
+      bool write(char const* path, RawData const& data);
+
+      bool write(RawData const& data);
 
       // Reads the given data object as a child of the path
       bool read( char const* path, RawData& data);
@@ -52,7 +54,11 @@ class ProjectFile {
    private:
       // Checks if the path currently exists in the file
       bool pathExists(char const* path) const;
+
+      // Performs a check to see if the DataType can be written to the group
+      // given by path.  
       bool pathCheck(char const* path, DataType const&) const;
+
       DataType getDataType(char const* path) const;
 
 	  void open(char const* filePath, IOMode const = Old, Schema const& = Schema());

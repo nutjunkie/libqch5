@@ -54,7 +54,7 @@ void ProjectFile::open(char const* path, IOMode const ioMode, Schema const& sche
          // Check for existance first so we don't overwrite
          std::ifstream f(path);
          if (f.good()) {
-            m_error = "ProjectFile already exists: " + String(path);
+            m_error = "file already exists: " + String(path);
             return;
          }else {
             m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -71,7 +71,7 @@ void ProjectFile::open(char const* path, IOMode const ioMode, Schema const& sche
    }
 
    if (m_fileId <= 0) {
-      m_error = "Failed opening project file " + String(path);
+      m_error = "Failed to open project file " + String(path);
       return;
    }
 
@@ -115,56 +115,67 @@ void ProjectFile::close()
 }
 
 
-
-
-
-
-
-void ProjectFile::write(char const* path, RawData const& data)
+bool ProjectFile::write(RawData const& data)
 {
+   // This should allow the file to be treated as a bucket, 
+   // the path has to be determined based on the datatype
+   return false;`
+}
+
+
+bool ProjectFile::write(char const* path, RawData const& data)
+{
+DEBUG("(((((((((((((((((((((((((((((((((((((((((((((");
 DEBUG("Writing " << data.label() << " of type " << data.dataType().toString() << " to " << path);
+   bool ok(false);
+
    if (pathCheck(path, data.dataType())) {
 
       hid_t gid = openGroup(m_fileId, path);
-      data.write(gid);
-      H5Gclose(gid);
-      DEBUG(data.dataType().toString() << " written to " << path);
+      if (gid > 0) {
+         data.write(gid);
+         H5Gclose(gid);
+         DEBUG(data.dataType().toString() << " written to " << path);
+         ok = true;
+      }else {
+         m_error = "Failed to open group " + String(path);
+      }
    }else {
-      DEBUG("WARN: Cannot write " << data.dataType().toString() << " to " << path
-          << " with current schema");
+      m_error = "Failed to rite " + data.dataType().toString()  + " to "
+          + String(path) + " with current schema";
    }
+DEBUG(")))))))))))))))))))))))))))))))))))))))))))))");
+   return ok;
 }
 
 
 bool ProjectFile::pathCheck(char const* path, DataType const& dataType) const
 {
-// !!!! recast in terms of getDataType?
    if (!pathExists(path)) return false;
 
    List<DataType> dataTypes(m_schema.find(dataType));
    std::vector<String> tokens(split(String(path),'/')); 
 
+   // The path does not account for the actual data that is being written 
+   // and so is 1 shorter.
+   if (dataTypes.size() != tokens.size() +1) {
+      DEBUG("Path length does not match that for DataType");
+      return false;
+   }
 
    String p;
-   List<String>::iterator iter;
-   for (iter = tokens.begin(); iter != tokens.end(); ++iter) {
-       p += "/" + *iter;
+   for (size_t i = 0; i < tokens.size(); ++i) {
+       p += "/" + tokens[i];
+       if (getDataType(p.c_str()) != dataTypes[i]) {
+          DEBUG("  pathCheck failed for " << p << " at level " << i);
+          DEBUG("  " << getDataType(p.c_str()) << " != "  << dataTypes[i]);
+          return false;
+       }
    }
 
-   String d;
-   List<DataType>::iterator diter;
-   for (diter = dataTypes.begin(); diter != dataTypes.end(); ++diter) {
-       d += "/" + diter->toString();
-   }
-
-   DEBUG(p);
-   DEBUG(d);
-   
+   DEBUG("Path Check passed");
    return true;
 }
-
-
-
 
 
 bool ProjectFile::read(char const* path, RawData& data)
@@ -221,19 +232,30 @@ bool ProjectFile::addGroup(char const* path, DataType const& dataType)
 
    }else {
 
-      hid_t gid = H5Gcreate(m_fileId, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      if (gid > 0) {
-         unsigned value(dataType.toUInt());
-         herr_t herr = H5LTset_attribute_uint(gid, path, "DataType", &value, 1);
-         if (herr == 0) {
-            ok = true;
+      // Strip off the group name for the path check
+      String p(path);
+      if (p.back() == '/') p.pop_back();  // strip any trailing '/'
+      p = p.substr(0, p.find_last_of('/'));
+
+      if (pathCheck(p.c_str(), dataType)) {
+         hid_t gid = H5Gcreate(m_fileId, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+         if (gid > 0) {
+            unsigned value(dataType.toUInt());
+            herr_t herr = H5LTset_attribute_uint(gid, path, "DataType", &value, 1);
+            if (herr == 0) {
+               ok = true;
+            }else {
+               m_error = "ProjectFile::addGroup: Failed to set attribute for " + String(path);
+            }
          }else {
-            m_error = "ProjectFile::addGroup: Failed to set attribute for " + String(path);
+            m_error = "ProjectFile::addGroup: Failed to add group: " + String(path);
          }
-      }else {
-         m_error = "ProjectFile::addGroup: Failed to add group: " + String(path);
+         if (gid > 0) H5Gclose(gid);
+
+      } else {
+         m_error = "Path check failed";
       }
-      if (gid > 0) H5Gclose(gid);
 
    }
 
