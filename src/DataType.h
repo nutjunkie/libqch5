@@ -20,18 +20,22 @@ class DataType {
 	  /// Note the default id is Base allowing user defined data strucutures as
 	  /// long as they interface generically.
       enum Id { Base = 0,
-                ProjectGroup,
+                Group, 
                 Project, 
-                MoleculeGroup,
                 Molecule,
-                GeometryGroup,
                 Geometry,
-                StateGroup,
                 State,
-                CalculationGroup,
                 Calculation,
-                PropertyGroup,
                 Property,
+                Externals,
+                BasisSet,
+                  // Are these needed?
+                  ProjectGroup,
+                  MoleculeGroup,
+                  GeometryGroup,
+                  StateGroup,
+                  CalculationGroup,
+                  PropertyGroup,
                 Invalid
               };
 

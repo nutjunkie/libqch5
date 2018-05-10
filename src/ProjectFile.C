@@ -9,9 +9,10 @@
 
 #include "ProjectFile.h"
 #include "H5Utils.h"
-#include "RawData.h"
 #include "hdf5_hl.h"
+#include "RawData.h"
 #include "StringUtils.h"
+#include <fstream>
 
 #include "Debug.h"
 
@@ -36,48 +37,72 @@ ProjectFile::~ProjectFile()
 void ProjectFile::open(char const* path, IOMode const ioMode, Schema const& schema)
 {
    if (m_ioStat == Open) {
-      DEBUG("ERROR: Attempt to open existing ProjectFile" << path);
+      DEBUG("WARN: Attempt to open existing ProjectFile: " << path);
+      return;
+   }
+
+   if (ioMode == New || ioMode == Overwrite) {
+      if (schema == Schema()) {
+         m_error = "Empty Schema specified for ProjectFile: " + String(path);
+         return;
+      }
+   }
+
+   switch (ioMode) {
+
+      case New: {
+         // Check for existance first so we don't overwrite
+         std::ifstream f(path);
+         if (f.good()) {
+            m_error = "ProjectFile already exists: " + String(path);
+            return;
+         }else {
+            m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+         } 
+       } break;
+
+      case Old:
+         m_fileId = H5Fopen(path, H5F_ACC_RDWR, H5P_DEFAULT);
+         break;
+
+      case Overwrite:
+         m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+         break;
+   }
+
+   if (m_fileId <= 0) {
+      m_error = "Failed opening project file " + String(path);
       return;
    }
 
    switch (ioMode) {
 
       case New:
-         DEBUG("Attempt to open new project archive: " << path);
-         m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+      case Overwrite:
+         if (writeSchema(schema)) {
+            m_schema = schema;
+            m_ioStat = Open;
+         }else {
+            m_error = "Failed to write schema to project file " + String(path);
+            close();
+         }
          break;
 
       case Old:
-         DEBUG("Attempt to open existing project archive: " << path);
-         DEBUG("WARN: Need to check if file exists before opening");
-         m_fileId = H5Fopen(path, H5F_ACC_RDWR, H5P_DEFAULT);
-         break;
-
-      case Overwrite:
-         DEBUG("Opening project archive: " << path);
-         m_fileId = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-         break;
-   }
-
-   if (m_fileId > 0) {
-
-      m_ioStat = Open;
-      DEBUG("Opened project file: " << path);
-      m_ioStat = Open;
-      if (ioMode == New || ioMode == Overwrite) {
-         if (!writeSchema(m_schema)) DEBUG("ERROR: " << m_error);
-      }else if (ioMode == Old) {
-         readSchema(m_schema); 
-         // make sure Schema match, if specified.
-         if ((schema != Schema()) && (schema != m_schema)) {
-            DEBUG("WARN: Mismatching schema specifed for ProjectFile:" << path);
-            m_schema.print();
-            schema.print();
+         if (readSchema(m_schema) && (m_schema != Schema()) ) {
+            if (schema == m_schema) {
+               m_ioStat = Open;
+            }else {
+               m_error = "Mismatch in Schemata for ProjectFile: " + String(path);
+               m_schema.print();
+               schema.print();
+               close();
+            }
+         }else {
+            m_error = "Failed to read valid schema from project file " + String(path);
+            close();
          }
-      }
-
-   }else {
-      DEBUG("Failed to open project file " << path);
+         break;
    }
 }
 
@@ -90,10 +115,16 @@ void ProjectFile::close()
 }
 
 
+
+
+
+
+
 void ProjectFile::write(char const* path, RawData const& data)
 {
-   pathCheck(path);
-   if (isValid(path, data)) {
+DEBUG("Writing " << data.label() << " of type " << data.dataType().toString() << " to " << path);
+   if (pathCheck(path, data.dataType())) {
+
       hid_t gid = openGroup(m_fileId, path);
       data.write(gid);
       H5Gclose(gid);
@@ -105,38 +136,32 @@ void ProjectFile::write(char const* path, RawData const& data)
 }
 
 
-
-bool ProjectFile::pathCheck(char const* path) const
+bool ProjectFile::pathCheck(char const* path, DataType const& dataType) const
 {
+// !!!! recast in terms of getDataType?
    if (!pathExists(path)) return false;
 
-   String s(path);
-   std::vector<String> tokens = split(String(path),'/'); 
+   List<DataType> dataTypes(m_schema.find(dataType));
+   std::vector<String> tokens(split(String(path),'/')); 
 
-   String p("/");
 
+   String p;
    List<String>::iterator iter;
    for (iter = tokens.begin(); iter != tokens.end(); ++iter) {
-       
-       std::cout << ":/:" << *iter << std::endl;
+       p += "/" + *iter;
    }
+
+   String d;
+   List<DataType>::iterator diter;
+   for (diter = dataTypes.begin(); diter != dataTypes.end(); ++diter) {
+       d += "/" + diter->toString();
+   }
+
+   DEBUG(p);
+   DEBUG(d);
    
    return true;
 }
-
-
-
-
-// !!!! recast in terms of getDataType?
-bool ProjectFile::isValid(char const* path, RawData const& data) const
-{
-   bool valid(pathExists(path));
-   
-   //valid = valid && m_schema.type(path) == data.dataType();
-   valid = valid && m_schema.isValid(path,  data.dataType());
-   return valid;
-}
-
 
 
 
@@ -172,7 +197,7 @@ bool ProjectFile::read(char const* path, RawData& data)
    bool ok(data.read(gid));
 
    if (!ok) m_error = "ProjectFile::read: Data read failed for path " + String(path);
-   if (ok) DEBUG("ProjectFile::read: " << dataType.toString() + " data read from " <<path);
+   if (ok) DEBUG("ProjectFile::read: " << dataType.toString() + " data read from " << path);
 
    H5Gclose(gid);
    return ok;
@@ -181,6 +206,8 @@ bool ProjectFile::read(char const* path, RawData& data)
 
 bool ProjectFile::addGroup(char const* path, DataType const& dataType)
 {
+   if (m_ioStat != Open) return false;
+
    bool ok(false);
 
    if (pathExists(path)) {
@@ -188,22 +215,26 @@ bool ProjectFile::addGroup(char const* path, DataType const& dataType)
       if (dataType == getDataType(path)) {
          ok = true;
       }else {
-         m_error = "ProjectFile::addGroup: inconsistent group already exists for " + String(path);
+         m_error = "ProjectFile::addGroup: inconsistent group already exists for " 
+            + String(path);
       }
 
    }else {
 
       hid_t gid = H5Gcreate(m_fileId, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      if (gid <= 0) {
-         m_error = "ProjectFile::addGroup: Failed to add group: " + String(path);
-      }else {
-         herr_t herr = H5LTset_attribute_string(gid, path, "DataType", dataType.toString().c_str());
+      if (gid > 0) {
+         unsigned value(dataType.toUInt());
+         herr_t herr = H5LTset_attribute_uint(gid, path, "DataType", &value, 1);
          if (herr == 0) {
             ok = true;
          }else {
             m_error = "ProjectFile::addGroup: Failed to set attribute for " + String(path);
          }
+      }else {
+         m_error = "ProjectFile::addGroup: Failed to add group: " + String(path);
       }
+      if (gid > 0) H5Gclose(gid);
+
    }
 
    return ok;
@@ -212,6 +243,7 @@ bool ProjectFile::addGroup(char const* path, DataType const& dataType)
 
 bool ProjectFile::pathExists(char const* path) const
 {
+   if (m_ioStat != Open) return false;
    hbool_t checkObjectValid(false);
    return H5LTpath_valid(m_fileId, path, checkObjectValid);
 }
@@ -220,6 +252,7 @@ bool ProjectFile::pathExists(char const* path) const
 DataType ProjectFile::getDataType(char const* path) const
 {
    DataType invalid(DataType::Invalid);
+   if (m_ioStat != Open) return invalid;
 
    if (!pathExists(path)) {
       DEBUG("ProjectFile::typeCheck: Non-existent path " << path);
@@ -276,11 +309,6 @@ bool ProjectFile::writeSchema(Schema const& schema)
 {
    String s(schema.serialize());
    herr_t herr = H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str());
-
-   if (herr != 0) {
-      m_error  = "Failed to write Schema";
-      m_ioStat = Error;
-   }
 
    return (herr == 0);
 }

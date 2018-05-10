@@ -8,9 +8,11 @@
 ********************************************************************************/
 
 #include "Schema.h"
-#include "Debug.h"
 #include "x_common.h"
 #include <sstream>
+#include <algorithm>
+
+#include "Debug.h"
 
 
 namespace libqch5 {
@@ -41,15 +43,17 @@ List<DataType> Schema::find(DataType const& target) const
        if (iter->data() == target) break;
    }
 
-/*
    if (iter != m_tree.df_pre_end()) {
-      Node* node(&(*iter));
-      while (!node->is_root()) { 
-            path.push_back(*node);
-            node = &node->parent();
+      Node const* node(&(*iter));
+      while (!node->is_root()) {
+         path.push_back(node->data());
+         node = &node->parent();
+         
       }
+      path.push_back(node->data());
    }
-*/
+
+   std::reverse(path.begin(), path.end());
 
    return path;
 }
@@ -140,6 +144,7 @@ bool Schema::operator==(Schema const& rhs) const
 
 
 
+/*
 
 bool Schema::isValid(char const* path, DataType const& dataType) const
 {
@@ -173,6 +178,7 @@ int Schema::depth(char const* path) const
    return d;
 }
 
+*/
 
 
 

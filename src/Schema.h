@@ -48,26 +48,10 @@ class Schema {
       bool operator!=(Schema const& rhs) const { return !(*this == rhs); }
 
 
-
-// DEPRECATE
-// Note that this will return the first DataType encountered and
-// does not handle the case where a given DataType appears more
-// than once in the Schema.
-DataType type(char const* path) const;
-// Utility function that determines the depth of the DataType
-// returns -1 if the DataType does not appear in the Schema.
-int depth(DataType const&) const;
-bool isValid(char const* path, DataType const&) const;
-// Utility function that determines the depth of the path
-// (essentially the number of '/' characters in the path.
-int depth(char const* path) const;
-      
-
    private:
       Tree m_tree;
 };
 
 } // end namespace
-
 
 #endif

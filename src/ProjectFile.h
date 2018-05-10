@@ -21,6 +21,8 @@ class RawData;
 class ProjectFile {
 
    public:
+      // Error status should be set when the HDF5 file is open, but may be
+      // in an invalid (recoverable?) state.
       enum IOStat { Closed, Open, Error };
       enum IOMode { New, Old, Overwrite };
       
@@ -33,6 +35,9 @@ class ProjectFile {
 
       ~ProjectFile();
 
+      bool isOpen() const { return m_ioStat == Open; }
+      String const& error() const { return m_error; }
+
 
       // Writes the given data object as a child of the path
       void write(char const* path, RawData const& data);
@@ -40,23 +45,15 @@ class ProjectFile {
       // Reads the given data object as a child of the path
       bool read( char const* path, RawData& data);
 
-
-      // Checks if the given path is valid for the given data
-      bool isValid(char const* path, RawData const& data) const;
-
-
-      // Checks if the path currently exists in the file
-      bool pathExists(char const* path) const;
-
-      bool addGroup(char const* path, DataType const&);
-
-      String const& error() const { return m_error; }
+      // Adds the specified group
+      bool addGroup(char const* path, DataType const& = DataType(DataType::Group));
 
 
    private:
-      bool pathCheck(char const* path) const;
+      // Checks if the path currently exists in the file
+      bool pathExists(char const* path) const;
+      bool pathCheck(char const* path, DataType const&) const;
       DataType getDataType(char const* path) const;
-
 
 	  void open(char const* filePath, IOMode const = Old, Schema const& = Schema());
 

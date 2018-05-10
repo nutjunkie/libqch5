@@ -40,7 +40,7 @@ int main()
    DEBUG("\n === RawData ===");
    // The RawData class has convenience functions that create array objects
    // and manage their data.  These are only available for D1-3
-   RawData data("Ethanol", DataType::Base);
+   RawData data("Ethanol", DataType::State);
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
    Array<3>& d3(data.createArray(6,5,4));
@@ -65,53 +65,69 @@ int main()
    data.setAttribute("pi", 3.1415);
    data.setAttribute("T1", 3);
    
+   RawData water("Water", DataType::Molecule);
+   water.setAttribute("density", 1.2);
+
+   RawData acetone("Acetone", DataType::Molecule);
 
    DEBUG("\n === Schema ===");
    // Schema form a tree structure that determines what data can reside where 
-   Schema schema;
-   Schema::Node& root(schema.root());
-      Schema::Node& projects(root.appendChild(DataType::ProjectGroup));
-
-      Schema::Node& molecules(projects.appendChild(DataType::MoleculeGroup));
-
-      Schema::Node& molecule(root.appendChild(DataType::Molecule));
-         Schema::Node& calculations(molecule.appendChild(DataType::Calculation));
-         Schema::Node& geometry(molecule.appendChild(DataType::Geometry));
-         Schema::Node& state(geometry.appendChild(DataType::State));
-      Schema::Node& thermochemical(root.appendChild(DataType::Property));
-      Schema::Node& zpve(thermochemical.appendChild(DataType::Property));
-
+   Schema schema(DataType::Project);
+   schema.root()
+         .appendChild(DataType::Molecule)
+         .appendChild(DataType::Geometry)
+         .appendChild(DataType::State)
+         .appendChild(DataType::Calculation)
+         .appendChild(DataType::Property);
 
    schema.print();
 
-   // These might appear to be off-by-one isValid -> canAppend?
-   bool valid;
-   valid = schema.isValid("/projects", DataType::Base);
-   valid = schema.isValid("/projects", DataType::State);
-   valid = schema.isValid("/projects/molecule/geom", DataType::Geometry);
+   // Schema can also be build up
+   Schema::Node& root(schema.root());
+   Schema::Node& externals(root.appendChild(DataType::Group));
+   Schema::Node& basis(externals.appendChild(DataType::BasisSet));
+
 
    
    DEBUG("\n === ProjectFile ===");
-   // New ProjectFiles can be created with a given schema, note that this 
-   // cannot be later changed.
+   // New ProjectFiles can be created with a given schema.
+   // Note that this cannot be later changed.
    ProjectFile project("myproject.h5", ProjectFile::New, schema);
+
+   if (!project.isOpen()) {
+      DEBUG("Problem opening ProjectFile " << project.error());
+      return 0;
+   }
 
    // Existing ProjectFiles can be opened and, if specified, a schema
    // check can be made to ensure consistent schema.
    // Schema::Node& units(zpve.appendChild(DataType::Property));
    ProjectFile project2("old_project.h5", ProjectFile::Old, schema);
 
+   DEBUG("\n======================================================\n");
+   ProjectFile nonexist("something.h5", ProjectFile::Old, Schema());
+   if (!nonexist.isOpen()) {
+      DEBUG("Problem opening ProjectFile nonexist " << nonexist.error());
+   }
+   DEBUG("\n======================================================\n");
 
-   project.write("/", data);
-   project.write("/Junk", data);
+   project.addGroup("/Isomerization");
+   project.write("/Isomerization", water);
+   project.write("/Isomerization", acetone);
+
+return 0;
+
+   // project.write("/", data);
+   // project.write("/Junk", data);
 
 
+/*
    DEBUG("\n======================================================\n");
    DEBUG("Check this: " << project.pathExists("/Projects"));
    DEBUG("Check this: " << project.pathExists("/Projects/Untitled"));
    DEBUG("Check this: " << project.pathExists("/Projects/Ethanol/0"));
-   DEBUG("Check this: " << project.isValid("/Projects", data));
    DEBUG("\n======================================================\n");
+*/
 
    RawData data2("Ethanol/", DataType::Base);
    DEBUG("reading data into data2");
@@ -122,8 +138,10 @@ int main()
 
    project.write("/Projects2", data2);
 
+/*
    schema.isValid("/Projects", data.dataType());
    schema.isValid("/Projects/Molecules/", data.dataType());
+*/
 
    return 0;
 }

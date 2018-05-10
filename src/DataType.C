@@ -83,8 +83,10 @@ String DataType::toString(Id id)
       case Calculation:               s = "Calculation";               break;
       case PropertyGroup:             s = "PropertyGroup";             break;
       case Property:                  s = "Property";                  break;
-
-      default:                        s = "Base";                      break;
+      case Group:                     s = "Group";                     break;
+      case Externals:                 s = "Externals";                 break;
+      case BasisSet:                  s = "BasisSet";                  break;
+      case Invalid:                   s = "Invalid";                   break;
    }
 
    return s;
