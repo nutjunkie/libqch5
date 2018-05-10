@@ -125,36 +125,41 @@ bool ProjectFile::pathCheck(char const* path) const
 }
 
 
+
+
+// !!!! recast in terms of getDataType?
+bool ProjectFile::isValid(char const* path, RawData const& data) const
+{
+   bool valid(pathExists(path));
+   
+   //valid = valid && m_schema.type(path) == data.dataType();
+   valid = valid && m_schema.isValid(path,  data.dataType());
+   return valid;
+}
+
+
+
+
+
+
 bool ProjectFile::read(char const* path, RawData& data)
 {
-   // We read without doing any Schmea check as long as the RawData DataType
-   // is consistent with the DataType of the path in the file.
    if (!pathExists(path)) {
       m_error = "ProjectFile::read: Non-existent path " + String(path);
       return false;
    }
    
+   DataType dataType(getDataType(path));
+
+   if (dataType != data.dataType()) {
+      m_error = "ProjectFile::read: Incompatible data types - " + dataType.toString() + 
+         " and " + data.dataType().toString();
+      return false;
+   }
+
    hid_t gid = H5Gopen(m_fileId, path, H5P_DEFAULT);
    if (gid <= 0) {
       m_error = "ProjectFile::read: Failed to open path " + String(path);
-      return false;
-   }
-
-   // Determine the DataType of the file object
-   unsigned value;
-   hid_t aid = H5Aopen_name(gid, "DataType");
-   herr_t status = H5Aread(aid, H5T_NATIVE_UINT, &value);
-   if (!(status == 0)) {
-      m_error = "ProjectFile::read: Failed to determine DataType for path " + String(path);
-      H5Gclose(gid);
-      return false;
-   }
-
-   DataType type(value);
-   if (type != data.dataType()) {
-      m_error = "ProjectFile::read: Incompatible data types - " + type.toString() + 
-         " and " + data.dataType().toString();
-      H5Gclose(gid);
       return false;
    }
 
@@ -167,9 +172,40 @@ bool ProjectFile::read(char const* path, RawData& data)
    bool ok(data.read(gid));
 
    if (!ok) m_error = "ProjectFile::read: Data read failed for path " + String(path);
-   if (ok) DEBUG("ProjectFile::read: " << type.toString() + " data read from " <<path);
+   if (ok) DEBUG("ProjectFile::read: " << dataType.toString() + " data read from " <<path);
 
    H5Gclose(gid);
+   return ok;
+}
+
+
+bool ProjectFile::addGroup(char const* path, DataType const& dataType)
+{
+   bool ok(false);
+
+   if (pathExists(path)) {
+
+      if (dataType == getDataType(path)) {
+         ok = true;
+      }else {
+         m_error = "ProjectFile::addGroup: inconsistent group already exists for " + String(path);
+      }
+
+   }else {
+
+      hid_t gid = H5Gcreate(m_fileId, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      if (gid <= 0) {
+         m_error = "ProjectFile::addGroup: Failed to add group: " + String(path);
+      }else {
+         herr_t herr = H5LTset_attribute_string(gid, path, "DataType", dataType.toString().c_str());
+         if (herr == 0) {
+            ok = true;
+         }else {
+            m_error = "ProjectFile::addGroup: Failed to set attribute for " + String(path);
+         }
+      }
+   }
+
    return ok;
 }
 
@@ -181,48 +217,7 @@ bool ProjectFile::pathExists(char const* path) const
 }
 
 
-/*
-bool ProjectFile::exists(char const* path, RawData const& data) const
-{
-   // check path exists
-   String p(path);
-   p += "/" + data.label();
-   hbool_t checkObjectValid(false);
-   htri_t valid = H5LTpath_valid( m_fileId, p.c_str(), checkObjectValid);
-   return valid;
-}
-*/
-
-
-bool ProjectFile::isValid(char const* path, RawData const& data) const
-{
-   bool valid(pathExists(path));
-   
-   //valid = valid && m_schema.type(path) == data.dataType();
-   valid = valid && m_schema.isValid(path,  data.dataType());
-   return valid;
-}
-
-
-
-bool ProjectFile::addGroup(char const* path)
-{
-   bool ok(true);
-
-   if (!pathExists(path)) {
-      hid_t group = H5Gcreate(m_fileId, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      if (group < 0) {
-         m_error  = "Failed to add group ProjectFile: ";
-         m_error += path;
-         ok = false;
-      }
-   }
-
-   return ok;
-}
-
-
-DataType ProjectFile::typeCheck(char const* path) const
+DataType ProjectFile::getDataType(char const* path) const
 {
    DataType invalid(DataType::Invalid);
 
@@ -263,12 +258,11 @@ bool ProjectFile::readSchema(Schema& schema)
 
    char* buffer(new char[length+1]);
 
-   herr_t ioStat =  H5LTget_attribute_string(m_fileId, "/", "Schema", buffer);
+   herr_t herr = H5LTget_attribute_string(m_fileId, "/", "Schema", buffer);
 
-   bool ok(ioStat == 0);
+   bool ok(herr == 0);
    if (ok) {
       ok = schema.deserialize(buffer);
-      //schema.print();
    }else {
       m_error  = "Failed to read Schema";
    }
@@ -281,14 +275,14 @@ bool ProjectFile::readSchema(Schema& schema)
 bool ProjectFile::writeSchema(Schema const& schema)
 {
    String s(schema.serialize());
-   herr_t ioStat(H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str()));
+   herr_t herr = H5LTset_attribute_string(m_fileId, "/", "Schema", s.c_str());
 
-   if (ioStat != 0) {
+   if (herr != 0) {
       m_error  = "Failed to write Schema";
       m_ioStat = Error;
    }
 
-   return ioStat == 0;;
+   return (herr == 0);
 }
 
 } // end namespace

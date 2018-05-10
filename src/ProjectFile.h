@@ -27,19 +27,19 @@ class ProjectFile {
       // Initializes a new ProjectFile with the given file path.  For files with
       // IOMode set to New or Overwrite, the Schema should be passed in to the
       // constructor.  For exisiting (Old) files the Schema is read in from the 
-      // file.  If a Schema is also specified, a  check is made to ensure the
-      // Schemas match.
+      // file.  If a Schema is also specified, a check is made to ensure matching
+      // Schemata.
 	  ProjectFile(char const* filePath, IOMode const = Old, Schema const& = Schema());
 
       ~ProjectFile();
 
-      String const& error() const { return m_error; }
 
       // Writes the given data object as a child of the path
       void write(char const* path, RawData const& data);
 
       // Reads the given data object as a child of the path
       bool read( char const* path, RawData& data);
+
 
       // Checks if the given path is valid for the given data
       bool isValid(char const* path, RawData const& data) const;
@@ -48,13 +48,14 @@ class ProjectFile {
       // Checks if the path currently exists in the file
       bool pathExists(char const* path) const;
 
-      bool addGroup(char const* path);
+      bool addGroup(char const* path, DataType const&);
 
+      String const& error() const { return m_error; }
 
 
    private:
       bool pathCheck(char const* path) const;
-      DataType typeCheck(char const* path) const;
+      DataType getDataType(char const* path) const;
 
 
 	  void open(char const* filePath, IOMode const = Old, Schema const& = Schema());
