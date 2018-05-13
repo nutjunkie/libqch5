@@ -12,7 +12,8 @@
 
 namespace libqch5 {
 
-Geometry::Geometry(char const* name) : RawData(name, DataType::Geometry)
+
+Geometry::Geometry(String const& name ) : RawData(DataType::Geometry, name) 
 {
    setAttribute("units", Bohr);
 }

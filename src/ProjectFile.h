@@ -21,10 +21,9 @@ class RawData;
 class ProjectFile {
 
    public:
-      // Error status should be set when the HDF5 file is open, but may be
-      // in an invalid (recoverable?) state.
-      enum IOStat { Closed, Open, Error };
+      enum IOStat { Closed, Open };
       enum IOMode { New, Old, Overwrite };
+      enum LogLevel { Off = 0, Error, Warn, Info };
       
       // Initializes a new ProjectFile with the given file path.  For files with
       // IOMode set to New or Overwrite, the Schema should be passed in to the
@@ -38,23 +37,23 @@ class ProjectFile {
       bool isOpen() const { return m_ioStat == Open; }
       String const& error() const { return m_error; }
 
-
       // Writes the given data object as a child of the path
       bool write(char const* path, RawData const& data);
-
       bool write(RawData const& data);
 
       // Reads the given data object as a child of the path
-      bool read( char const* path, RawData& data);
+      bool read(char const* path, RawData& data);
 
       // Adds the specified group
       bool addGroup(char const* path, DataType const& = DataType(DataType::Group));
 
-
-   private:
       // Checks if the path currently exists in the file
       bool pathExists(char const* path) const;
 
+      void setLogLevel(LogLevel logLevel) { m_logLevel = logLevel; }
+
+
+   private:
       // Performs a check to see if the DataType can be written to the group
       // given by path.  
       bool pathCheck(char const* path, DataType const&) const;
@@ -74,10 +73,13 @@ class ProjectFile {
 	  /// or if the write failed.
       bool writeSchema(Schema const&);
 
-      String  m_error;
-      hid_t   m_fileId;
-      IOStat  m_ioStat;
-      Schema  m_schema;
+      void log(LogLevel level, String const&) const;
+
+      String   m_error;
+      hid_t    m_fileId;
+      IOStat   m_ioStat;
+      Schema   m_schema;
+      LogLevel m_logLevel;
 };
 
 } // end namespace

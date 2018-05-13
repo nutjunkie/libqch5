@@ -1,49 +1,61 @@
 #include "ProjectFile.h"
 #include "Molecule.h"
-
-
-#include "Array.h"
+#include "Geometry.h"
 #include "RawData.h"
 #include "Schema.h"
-
 #include <iostream>
+
 
 using namespace libqch5;
 
-int main()
+
+int testArray()
 {
    DEBUG("\n === Array ===");
    // Each Array<T> has associated Size and Index types that can be used for
    // setting up the size of the array and accessing its elements.
-   Array<3>::Size dims = { 3, 4, 8 }; 
+   Array<3>::Size dims = { 3, 3, 3 }; 
    Array<3> array(dims);
 
    // Fill array with offset data for debugging
    array.fill();  
 
-   // We can access an element using an Index type:
-   Array<3>::Index idx = { 0, 1, 3 }; 
+   /// We can access an element using aggregate initialization:
+   array({1,1,2}) = 345.01;
+
+   // Or by using an Index type:
+   Array<3>::Index idx = { 0, 1, 2 }; 
 
    for (idx[0] = 0; idx[0] < array.dim(0); ++idx[0]) {
        DEBUG("Array element ("<< idx[0] << "," << idx[1] << ","
                << idx[2] << ") = " << array(idx));
    }
 
-   /// We can also access an element directly using aggregate initialization:
-   array({3,4,2}) = 345;
-
    /// The default type of an array is double, but the class is templated:
-   Array<1>::Size d = { 8 }; 
-   Array<1, int> list(d);
+   typedef Array<1, int> IntVec;
+   IntVec copy;
+   {
+      IntVec::Size d = { 8 }; 
+      IntVec list(d);
+      list.fill();
+      copy  =  list;
+   }
+   copy.dump();
+   DEBUG("copy element " << copy[6]);
+
+   return 0;
+}
 
 
+int testRawData()
+{
    DEBUG("\n === RawData ===");
    // The RawData class has convenience functions that create array objects
    // and manage their data.  These are only available for D1-3
-   RawData data("Ethanol", DataType::State);
+   RawData data(DataType::Geometry, "ground");
    Array<1>& d1(data.createArray(10));
    Array<2>& d2(data.createArray(4,6));
-   Array<3>& d3(data.createArray(6,5,4));
+   Array<3>& d3(data.createArray(3,4,4));
 
    // The arrays can be accessed via their handles.
    d1.fill();  d2.fill();  d3.fill();
@@ -59,16 +71,38 @@ int main()
 
    /// Attributes can be ascribed to the RawData objects.  These are small data
    /// (double, int, string) that do not need memory managemant.
-   data.setAttribute("T1", 50);
    data.setAttribute("convergence", 5);
    data.setAttribute("theory", "b3lyp");
-   data.setAttribute("pi", 3.1415);
-   data.setAttribute("T1", 3);
-   
-   RawData water("Water", DataType::Molecule);
-   water.setAttribute("density", 1.2);
+   data.setAttribute("energy", 3.1415);
 
-   RawData acetone("Acetone", DataType::Molecule);
+   RawData copy(data);
+   
+   String value;
+   if (copy.getAttribute("theory", value)) {
+      DEBUG("Atrribute from copied structure theory = " << value);
+   }else {
+      DEBUG("Failed to read atrribute from copied structure");
+   }
+
+   return 0;
+}
+
+
+void fillData(RawData& data)
+{
+   Array<2>& d2(data.createArray(4,6));
+   d2.fill();
+   data.setAttribute("units", Geometry::Bohr);
+   data.setAttribute("theory", "b3lyp");
+   data.setAttribute("energy", 3.1415);
+}
+
+
+
+int main()
+{
+   //testArray();
+   //return testRawData();
 
    DEBUG("\n === Schema ===");
    // Schema form a tree structure that determines what data can reside where 
@@ -82,17 +116,17 @@ int main()
 
    schema.print();
 
-   // Schema can also be build up
+   // Schema can also be build up more generally
    Schema::Node& root(schema.root());
    Schema::Node& externals(root.appendChild(DataType::Group));
    Schema::Node& basis(externals.appendChild(DataType::BasisSet));
-
 
    
    DEBUG("\n === ProjectFile ===");
    // New ProjectFiles can be created with a given schema.
    // Note that this cannot be later changed.
    ProjectFile project("myproject.h5", ProjectFile::Overwrite, schema);
+   project.setLogLevel(ProjectFile::Warn);
 
    if (!project.isOpen()) {
       DEBUG("Problem opening ProjectFile " << project.error());
@@ -104,44 +138,45 @@ int main()
    // Schema::Node& units(zpve.appendChild(DataType::Property));
    ProjectFile project2("old_project.h5", ProjectFile::Old, schema);
 
-   DEBUG("\n======================================================\n");
+   DEBUG("\n============ This should fail =======================\n");
    ProjectFile nonexist("something.h5", ProjectFile::Old, Schema());
    if (!nonexist.isOpen()) {
       DEBUG("Problem opening ProjectFile nonexist " << nonexist.error());
    }
-   DEBUG("\n======================================================\n");
+   DEBUG("\n=====================================================\n");
+
+   Molecule water("water");
+   Molecule acetone("acetone");
 
    project.addGroup("/Isomerization", DataType::Project);
    project.write("/Isomerization", water);
    project.write("/Isomerization", acetone);
 
-return 0;
+   Geometry geom("ground");
+   fillData(geom);
+   project.write("/Isomerization/water", geom);
+   
 
-   // project.write("/", data);
-   // project.write("/Junk", data);
+   DEBUG("\nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n");
+   Geometry copy;
+   project.read("/Isomerization/water/ground", geom);
+   DEBUG("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
 
+   geom.setLabel("excited");
+   project.write("/Isomerization/water", geom);
 
-/*
    DEBUG("\n======================================================\n");
-   DEBUG("Check this: " << project.pathExists("/Projects"));
-   DEBUG("Check this: " << project.pathExists("/Projects/Untitled"));
-   DEBUG("Check this: " << project.pathExists("/Projects/Ethanol/0"));
+   DEBUG("Check this: " << project.pathExists("/Isomerization/Water"));
+   DEBUG("Check this: " << project.pathExists("/Isomerization/water"));
    DEBUG("\n======================================================\n");
-*/
 
-   RawData data2("Ethanol/", DataType::Base);
+   RawData data2(DataType::Molecule, "Ethanol/");
    DEBUG("reading data into data2");
 
-   if (!project.read("/Ethanol", data2)) {
-      DEBUG("ERROR: " << project.error());
-   }
+   project.read("/Isomerization/water/", data2);
+   data2.setLabel("Ethanol/");
 
-   project.write("/Projects2", data2);
-
-/*
-   schema.isValid("/Projects", data.dataType());
-   schema.isValid("/Projects/Molecules/", data.dataType());
-*/
+   project.write("/Isomerization", data2);
 
    return 0;
 }

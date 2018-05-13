@@ -15,7 +15,6 @@
 #include "DataType.h"
 #include "Attributes.h"
 
-
 namespace libqch5 {
 
 class RawData {
@@ -23,23 +22,27 @@ class RawData {
    friend class ProjectFile;
 
    public:
-       RawData(String const& label = "Untitled", 
-          DataType::Id const& type = DataType::Base) 
+       RawData( DataType::Id const& type = DataType::Base,
+          String const& label = "Untitled")
         : m_label(label), m_type(type) { }
 
-       ~RawData();
+       RawData(RawData const& that) {  copy(that); }
 
+       ~RawData() { destroy(); }
 
+       RawData& operator=(RawData const& that);
+    
+       void setLabel(String const& label) { m_label = label; }
        String const& label() const { return m_label; }
        DataType const& dataType() const { return m_type; }
 
        template <typename T>
-       void setAttribute(String const& name, T value) {
+       void setAttribute(String const& name, T const& value) {
           m_attributes.set(name, value);
        }
 
        template <typename T>
-       bool getAttribute(String const& name, T value) {
+       bool getAttribute(String const& name, T& value) {
           return m_attributes.get(name, value);
        }
 
@@ -79,8 +82,6 @@ class RawData {
 
 
    protected:
-
-       void setLabel(String const& label) { m_label = label; }
        void setDataType(DataType const type) { m_type = type; }
 
        bool write(hid_t gid) const;
@@ -91,8 +92,8 @@ class RawData {
        bool read(hid_t gid);
 
    private:
-       // prohibit copying
-       RawData(RawData const&) { }
+       void copy(RawData const&);
+       void destroy();
 
        bool write(hid_t fid, char const* path, hid_t tid, size_t rank, 
           hsize_t const* dimensions, void const* data) const;

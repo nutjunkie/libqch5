@@ -4,7 +4,9 @@ set(SRC
    Attributes.C
    DataType.C
    H5Utils.C
+   Geometry.C
    ProjectFile.C
+   Molecule.C
    RawData.C
    Schema.C
 )

@@ -16,14 +16,19 @@ class Geometry : public RawData {
 
    public:
       enum Units { Bohr = 0, Angstroms };
-      Geometry(char const* name);
+
+      Geometry(String const& name = String());
 
       void setAtoms(List<unsigned> atoms);
       void setCoordinates(List<double> xyz);
+
+      Array<2> const& getCoordinates() const;
+
       void setUnits();
 
    private:
       unsigned m_nAtoms;
+      Units m_units;
 };
 
 } // end namespace

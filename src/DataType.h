@@ -25,6 +25,7 @@ class DataType {
                 Molecule,
                 Geometry,
                 State,
+                Orbitals,
                 Calculation,
                 Property,
                 Externals,

@@ -29,6 +29,7 @@ class ArrayBase {
     public: 
        virtual ~ArrayBase() { }
        virtual size_t rank() const = 0;
+       virtual ArrayBase* clone() const = 0;
 
     protected:
        virtual hid_t h5DataType() const = 0;
@@ -66,23 +67,28 @@ template < size_t D, typename T = double >
 class Array : public ArrayBase {
 
    public:
-
       typedef std::array<size_t, D> Size;
       typedef std::array<size_t, D> Index;
 
-      Array(Size size) : m_data(0), m_size(size), m_length(0)
-      { 
-         resize(size);
+      static Size ZeroSize() { Size z; z.fill(0); return z; } 
+
+      Array(Size size = ZeroSize()) : m_length(0), m_data(0) { resize(size); }
+
+      Array(Array const& that) : m_length(0), m_data(0) { copy(that); }
+
+      ~Array() { destroy(); }
+
+      Array& operator=(Array const& that) 
+      {
+          if (this != &that) copy(that);
+          return *this;
       }
 
-      ~Array() 
-      { 
-         if (m_data) delete m_data;
-      }
+      Array* clone() const { return new Array(*this); }
 
 	  /// Resizes the Array to the given Size after deleting any exisiting
 	  /// allocated memory.  The contents of the Array are undefined after a
-	  /// resize, if zero initialization is required, use the clear() function.
+	  /// resize, if zero initialization is required, use the init() function.
       void resize(Size size) 
       { 
          m_size = size;
@@ -101,10 +107,7 @@ class Array : public ArrayBase {
       }
 
       /// Initializes the Array buffer to zero
-      void clear()
-      {
-         if (m_data) memset(m_data, 0, m_length*sizeof(T));
-      }
+      void init() { if (m_data) memset(m_data, 0, m_length*sizeof(T)); }
 
       hid_t h5DataType() const { return H5DataType(T()); }
 
@@ -156,11 +159,24 @@ class Array : public ArrayBase {
 
       size_t*  dimensions() { return m_size.data(); }
 
+      void copy(Array const& that) 
+      {
+         resize(that.dims());
+         memcpy(m_data, that.m_data, m_length*sizeof(T));
+      }
+
+      void destroy()
+      {
+         if (m_data) delete m_data;
+         m_data   = 0;
+         m_length = 0;
+      }
+
    private:
       T*       m_data;
+      size_t   m_length;
       Size     m_size;
       Size     m_offsets; // used for computing offset into m_data
-      size_t   m_length;
 };
 
 } // end namespace

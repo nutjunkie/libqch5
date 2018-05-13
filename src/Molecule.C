@@ -12,14 +12,8 @@
 
 namespace libqch5 {
 
-Molecule::Molecule(char const* name) : DataSpace(2,name);
+void Molecule::setAtoms(List<unsigned> const& atoms)
 {
-//    addChunk(0); // nAtoms;
-}
-
-void Molecule::nAtoms(List<unsigned> const& atoms)
-{
-   addChunk
 }
 
 } // end namespace

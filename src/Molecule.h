@@ -7,22 +7,20 @@
 
 ********************************************************************************/
 
-#include "ContextData.h"
+#include "RawData.h"
 
 
 namespace libqch5 {
 
-class Molecule : public ContextData {
+class Molecule : public RawData {
 
    public:
-      Molecule(char const* name);
+      Molecule(String const& name) : RawData(DataType::Molecule, name) { }
 
-      void setAtoms(List<unsigned> atoms);
+      void setAtoms(List<unsigned> const& atoms);
 
    private:
       unsigned m_nAtoms;
 };
 
 } // end namespace
-
-

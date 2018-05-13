@@ -86,6 +86,7 @@ String DataType::toString(Id id)
       case Group:                     s = "Group";                     break;
       case Externals:                 s = "Externals";                 break;
       case BasisSet:                  s = "BasisSet";                  break;
+      case Orbitals:                  s = "Orbitals";                  break;
       case Invalid:                   s = "Invalid";                   break;
    }
 
